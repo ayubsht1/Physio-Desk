@@ -2,12 +2,12 @@ node_modules/
 .next/
 out/
 
-backend/.env
-backend/__pycache__/
-backend/**/*.py[cod]
-backend/.pytest_cache/
-backend/.mypy_cache/
-backend/venv/
+physiodesk-backend/.env
+physiodesk-backend/__pycache__/
+physiodesk-backend/**/*.py[cod]
+physiodesk-backend/.pytest_cache/
+physiodesk-backend/.mypy_cache/
+physiodesk-backend/venv/
 
 .env
 .env.*
