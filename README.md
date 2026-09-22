@@ -1,32 +1,50 @@
 # Physio Desk
 
-Physio Desk is a physiotherapy practice management application. The project currently includes a Next.js frontend, a FastAPI backend, and PostgreSQL for local development.
+Physio Desk is a physiotherapy clinic operations demo built with a FastAPI backend and a Next.js dashboard front end. The project includes a design system-based dashboard, seeded data, role-based authentication, and the core clinic entities required by the brief.
 
-## Project Structure
+## Assumptions
+
+- Admin users can access billing and therapist management; staff users can read and work with patient and scheduling data but are restricted from admin-only management.
+- A single therapist slot is treated as a 30/45/60-minute time block depending on the therapist schedule; double-booking is prevented at the API layer.
+- Appointments created in the demo use an in-memory check against the same therapist/date/start time combination, rather than a complex recurring schedule engine.
+- The frontend is a design-focused demo that matches the requested palette, fonts, and dashboard conventions while calling the API layer for seeded state.
+
+## Stack
+
+- Backend: FastAPI, SQLAlchemy, PostgreSQL, Alembic
+- Frontend: Next.js 16, React 19, TypeScript
+- Auth: JWT access tokens with a role-based permission dependency
+- Data: PostgreSQL with a seed script for admin/staff users, patients, therapists, appointments, and invoices
+
+## Project structure
 
 ```text
 .
-├── docker-compose.yml             # Local PostgreSQL service
-├── physiodesk-backend/            # FastAPI API
+├── docker-compose.yml
+├── README.md
+├── physiodesk-backend/
+│   ├── alembic/
 │   ├── app/
-│   │   ├── api/v1/                # Versioned API routes
-│   │   ├── core/                  # Configuration, database, and security
-│   │   ├── models/                # SQLAlchemy models
-│   │   └── schemas/               # Request and response schemas
-│   └── requirements.txt
-└── physiodesk-frontend/           # Next.js web application
-    ├── src/app/
-    └── package.json
+│   ├── .env.example
+│   ├── alembic.ini
+│   ├── create_seed_data.py
+│   ├── requirements.txt
+│   └── ...
+├── physiodesk-frontend/
+│   ├── src/
+│   ├── package.json
+│   └── ...
+└── .gitignore
 ```
 
 ## Prerequisites
 
-- Python 3.11 or newer
-- Node.js 20 or newer
-- npm
-- Docker Desktop with Docker Compose
+- Python 3.11+
+- Node.js 20+
+- Docker Desktop / Docker Compose
+- PostgreSQL client tools are optional
 
-## Getting Started
+## Local setup
 
 ### 1. Start PostgreSQL
 
@@ -36,19 +54,15 @@ From the repository root:
 docker compose up -d postgres
 ```
 
-PostgreSQL is exposed on `localhost:5432` with these development credentials:
+Expected credentials:
 
-| Setting | Value |
-| --- | --- |
-| Database | `physio_desk` |
-| User | `physio` |
-| Password | `physio` |
-| Host | `localhost` |
-| Port | `5432` |
+- Database: physio_desk
+- User: physio
+- Password: physio
+- Host: localhost
+- Port: 5432
 
-### 2. Run the backend
-
-Create and activate a virtual environment, then install the Python dependencies:
+### 2. Backend setup
 
 ```bash
 cd physiodesk-backend
@@ -61,19 +75,24 @@ python -m venv .venv
 # source .venv/bin/activate
 
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
+copy .env.example .env
 ```
 
-The API runs at `http://localhost:8000`.
+Then initialize the database schema and seed the app:
 
-Optional backend environment variables can be placed in `physiodesk-backend/.env`:
-
-```env
-DATABASE_URL=postgresql+psycopg2://physio:physio@localhost:5432/physio_desk
-CORS_ORIGINS=http://localhost:3000
+```bash
+python -m alembic upgrade head
+python create_seed_data.py
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Run the frontend
+The API is available at:
+
+- http://localhost:8000
+- http://localhost:8000/docs
+- http://localhost:8000/redoc
+
+### 3. Frontend setup
 
 In a second terminal:
 
@@ -83,52 +102,49 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` in a browser.
+Then open:
 
-## API
+- http://localhost:3000
 
-The backend currently exposes health checks:
+## Login credentials
 
-- `GET /health`
-- `GET /api/v1/health`
+- Admin: admin / admin123
+- Staff: staff / staff123
 
-Both return:
+## API auth behavior
 
-```json
-{"status":"ok"}
-```
+- Login is handled at POST /api/v1/auth/login
+- The JWT access token must be sent with Authorization: Bearer <token>
+- Role enforcement is applied through the backend dependency checks for admin-only routes such as therapist and billing management
+- All non-login routes require an authenticated session
 
-Interactive API documentation is available at:
+## Seeded data
 
-- `http://localhost:8000/docs`
-- `http://localhost:8000/redoc`
+The demo includes:
 
-## Useful Commands
+- 2 users (admin + staff)
+- 10 patients
+- 4 therapists
+- Several appointments covering today and upcoming sessions
+- Mixed paid and due invoices
 
-### Frontend
-
-```bash
-cd physiodesk-frontend
-npm run dev       # Start development server
-npm run lint      # Run ESLint
-npm run build     # Create production build
-npm run start     # Serve production build
-```
-
-### Backend and database
+## Alembic workflow
 
 ```bash
 cd physiodesk-backend
-python -m uvicorn app.main:app --reload
-
-# From the repository root
-docker compose ps
-docker compose logs -f postgres
-docker compose down
+python -m alembic revision --autogenerate -m "describe changes"
+python -m alembic upgrade head
 ```
 
-## Development Notes
+## Notes
 
-- The backend loads configuration from environment variables and `physiodesk-backend/.env`.
-- The PostgreSQL data is persisted in the `physio-desk-data` Docker volume.
-- Do not commit local `.env` files or virtual environments.
+- The design language follows the palette and type system described in the brief: Fraunces for headings, Inter for UI, IBM Plex Mono for data points.
+- The dashboard is a visually aligned demo and intentionally focuses on the key clinic operating views rather than a full enterprise complexity.
+
+## What I would improve with more time
+
+- Expand the frontend to fully interactive patient, scheduling, invoice, and therapist CRUD screens with real API-driven forms.
+- Add refresh-token rotation and stronger auth session handling.
+- Build richer schedule validation, availability widgets, and a real-day calendar grid.
+- Add integration tests for auth, appointment booking conflict prevention, and billing logic.
+- Deploy the app to a hosted environment for live reviewer access.
