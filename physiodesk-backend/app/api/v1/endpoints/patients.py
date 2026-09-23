@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
+from app.models.appointment import Appointment
+from app.models.invoice import Invoice
 from app.models.patient import Patient
 from app.models.therapist import Therapist
 from app.models.user import User
-from app.schemas import PatientCreate, PatientRead, PatientUpdate
+from app.schemas import PatientCreate, PatientDetail, PatientRead, PatientUpdate
 
 router = APIRouter(prefix="/patients")
 
@@ -46,7 +48,7 @@ def list_patients(
     ]
 
 
-@router.get("/{patient_id}", response_model=dict)
+@router.get("/{patient_id}", response_model=PatientDetail)
 def get_patient(patient_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
@@ -66,8 +68,38 @@ def get_patient(patient_id: int, db: Session = Depends(get_db), current_user: Us
             "created_at": patient.created_at,
             "therapist_name": patient.therapist.name if patient.therapist else None,
         },
-        "session_history": [],
-        "billing_history": [],
+        "session_history": [
+            {
+                "id": appointment.id,
+                "patient_id": appointment.patient_id,
+                "therapist_id": appointment.therapist_id,
+                "appointment_date": appointment.appointment_date,
+                "start_time": appointment.start_time,
+                "end_time": appointment.end_time,
+                "status": appointment.status,
+                "payment_method": appointment.payment_method,
+                "notes": appointment.notes,
+                "patient_name": patient.name,
+                "therapist_name": appointment.therapist.name,
+                "created_at": appointment.created_at,
+            }
+            for appointment in db.query(Appointment).filter(Appointment.patient_id == patient.id).order_by(Appointment.appointment_date.desc(), Appointment.start_time.desc()).all()
+        ],
+        "billing_history": [
+            {
+                "id": invoice.id,
+                "patient_id": invoice.patient_id,
+                "service": invoice.service,
+                "invoice_date": invoice.invoice_date,
+                "amount": float(invoice.amount),
+                "status": invoice.status,
+                "payment_method": invoice.payment_method,
+                "discount": float(invoice.discount),
+                "notes": invoice.notes,
+                "patient_name": patient.name,
+            }
+            for invoice in db.query(Invoice).filter(Invoice.patient_id == patient.id).order_by(Invoice.invoice_date.desc()).all()
+        ],
     }
 
 
@@ -112,6 +144,10 @@ def update_patient(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+    if "assigned_therapist_id" in payload.model_fields_set and payload.assigned_therapist_id is not None:
+        therapist = db.query(Therapist).filter(Therapist.id == payload.assigned_therapist_id).first()
+        if not therapist:
+            raise HTTPException(status_code=400, detail="Assigned therapist not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(patient, field, value)
     patient.created_at = payload.created_at or patient.created_at
@@ -138,6 +174,8 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db), current_user:
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+    if db.query(Appointment).filter(Appointment.patient_id == patient.id).first() or db.query(Invoice).filter(Invoice.patient_id == patient.id).first():
+        raise HTTPException(status_code=409, detail="Patient has appointments or invoices and cannot be deleted")
     db.delete(patient)
     db.commit()
     return {"message": "Patient deleted successfully"}

@@ -6,14 +6,12 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import Appointment, Invoice, Patient, Therapist, User
-from app.core.database import Base
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 engine = create_engine(settings.database_url)
 
 
 def seed() -> None:
-    Base.metadata.create_all(bind=engine)
     with Session(engine) as session:
         existing_users = session.query(User).count()
         if existing_users:

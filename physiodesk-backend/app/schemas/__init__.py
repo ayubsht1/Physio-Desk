@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class TokenPayload(BaseModel):
@@ -36,6 +36,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class PatientCreate(BaseModel):
     name: str
     phone: str
@@ -48,9 +52,32 @@ class PatientCreate(BaseModel):
     status: Literal["Active", "Completed", "On hold"] = "Active"
     created_at: date | None = None
 
+    @field_validator("age")
+    @classmethod
+    def validate_age(cls, value: int) -> int:
+        if not 0 <= value <= 130:
+            raise ValueError("Age must be between 0 and 130")
+        return value
 
-class PatientUpdate(PatientCreate):
-    pass
+
+class PatientUpdate(BaseModel):
+    name: str | None = None
+    phone: str | None = None
+    age: int | None = None
+    gender: str | None = None
+    address: str | None = None
+    condition: str | None = None
+    assigned_therapist_id: int | None = None
+    package: str | None = None
+    status: Literal["Active", "Completed", "On hold"] | None = None
+    created_at: date | None = None
+
+    @field_validator("age")
+    @classmethod
+    def validate_age(cls, value: int | None) -> int | None:
+        if value is not None and not 0 <= value <= 130:
+            raise ValueError("Age must be between 0 and 130")
+        return value
 
 
 class PatientRead(PatientCreate):
@@ -68,6 +95,26 @@ class TherapistCreate(BaseModel):
     is_active: bool = True
     notes: str | None = None
 
+    @field_validator("slot_duration")
+    @classmethod
+    def validate_slot_duration(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("Slot duration must be greater than zero")
+        return value
+
+    @model_validator(mode="after")
+    def validate_working_hours(self):
+        from datetime import datetime
+
+        try:
+            start = datetime.strptime(self.start_time, "%H:%M")
+            end = datetime.strptime(self.end_time, "%H:%M")
+        except ValueError as exc:
+            raise ValueError("Working hours must use HH:MM format") from exc
+        if start >= end:
+            raise ValueError("End time must be after start time")
+        return self
+
 
 class TherapistRead(TherapistCreate):
     id: int
@@ -81,7 +128,20 @@ class AppointmentCreate(BaseModel):
     end_time: str
     payment_method: str | None = None
     notes: str | None = None
-    status: str = "Booked"
+    status: Literal["Booked", "Completed", "Cancelled", "No-show"] = "Booked"
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_time(cls, value: str) -> str:
+        from datetime import datetime
+
+        try:
+            if len(value) != 5 or value[2] != ":":
+                raise ValueError
+            datetime.strptime(value, "%H:%M")
+        except ValueError as exc:
+            raise ValueError("Time must use HH:MM format") from exc
+        return value
 
 
 class AppointmentRead(AppointmentCreate):
@@ -96,10 +156,17 @@ class InvoiceCreate(BaseModel):
     service: str
     invoice_date: date
     amount: float
-    status: Literal["Paid", "Due"] = "Due"
+    status: Literal["Paid", "Due", "Void"] = "Due"
     payment_method: str | None = None
     discount: float = 0.0
     notes: str | None = None
+
+    @field_validator("amount", "discount")
+    @classmethod
+    def validate_money(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("Amount and discount cannot be negative")
+        return value
 
 
 class InvoiceRead(InvoiceCreate):

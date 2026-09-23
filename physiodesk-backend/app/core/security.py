@@ -27,7 +27,7 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     if expires_delta is None:
         expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode = {"sub": subject, "exp": expire}
+    to_encode = {"sub": subject, "type": "access", "exp": expire}
     return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
@@ -37,12 +37,12 @@ def create_refresh_token(subject: str) -> str:
     return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
-def get_user_from_token(token: str) -> str:
+def get_user_from_token(token: str, expected_type: str = "access") -> str:
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         username = payload.get("sub")
-        if username is None:
-            raise ValueError("Missing subject")
+        if username is None or payload.get("type") != expected_type:
+            raise ValueError("Invalid token claims")
         return username
     except (JWTError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
@@ -54,7 +54,7 @@ def get_current_user(
 ) -> User:
     username = get_user_from_token(token)
     user = db.query(User).filter(User.username == username).first()
-    if user is None:
+    if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 

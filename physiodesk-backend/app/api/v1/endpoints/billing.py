@@ -62,6 +62,9 @@ def update_invoice(invoice_id: int, payload: InvoiceCreate, db: Session = Depend
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
+    patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=400, detail="Patient not found")
     for field, value in payload.model_dump().items():
         setattr(invoice, field, value)
     db.commit()

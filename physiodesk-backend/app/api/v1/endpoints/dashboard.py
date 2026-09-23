@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.scheduling import DAY_NAMES, parse_time
 from app.core.security import get_current_user
 from app.models.appointment import Appointment
 from app.models.invoice import Invoice
@@ -22,20 +23,26 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
 
     patients_seen_today = (
         db.query(Appointment)
-        .filter(Appointment.appointment_date == today)
+        .filter(Appointment.appointment_date == today, Appointment.status == "Completed")
         .count()
     )
 
-    therapists_on_duty_today = db.query(Therapist).filter(Therapist.is_active.is_(True)).count()
+    today_name = DAY_NAMES[today.weekday()]
+    therapists = db.query(Therapist).filter(Therapist.is_active.is_(True)).all()
+    therapists_on_duty_today = sum(today_name in {day.strip() for day in therapist.working_days.split(",")} for therapist in therapists)
 
     revenue_collected_today = float(
-        db.query(func.coalesce(func.sum(Invoice.amount), 0))
+        db.query(func.coalesce(func.sum(Invoice.amount - Invoice.discount), 0))
         .filter(Invoice.invoice_date == today, Invoice.status == "Paid")
         .scalar() or 0
     )
 
-    total_slots = db.query(Therapist).filter(Therapist.is_active.is_(True)).count() * 8
-    booked_slots = db.query(Appointment).filter(Appointment.appointment_date == today).count()
+    total_slots = 0
+    for therapist in therapists:
+        if today_name in {day.strip() for day in therapist.working_days.split(",")}:
+            minutes = (parse_time(therapist.end_time) - parse_time(therapist.start_time)).seconds // 60
+            total_slots += minutes // therapist.slot_duration
+    booked_slots = db.query(Appointment).filter(Appointment.appointment_date == today, Appointment.status != "Cancelled").count()
     open_slots_remaining_today = max(total_slots - booked_slots, 0)
 
     recent_patients = db.query(Patient).order_by(Patient.created_at.desc()).limit(5).all()
@@ -58,14 +65,17 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
     ]
 
     therapist_capacity = []
-    therapists = db.query(Therapist).filter(Therapist.is_active.is_(True)).all()
     for therapist in therapists:
-        day_bookings = db.query(Appointment).filter(Appointment.therapist_id == therapist.id, Appointment.appointment_date == today).count()
+        if today_name not in {day.strip() for day in therapist.working_days.split(",")}:
+            continue
+        minutes = (parse_time(therapist.end_time) - parse_time(therapist.start_time)).seconds // 60
+        capacity = minutes // therapist.slot_duration
+        day_bookings = db.query(Appointment).filter(Appointment.therapist_id == therapist.id, Appointment.appointment_date == today, Appointment.status != "Cancelled").count()
         therapist_capacity.append({
             "therapist_name": therapist.name,
             "specialty": therapist.specialty,
             "booked": day_bookings,
-            "free": max(8 - day_bookings, 0),
+            "free": max(capacity - day_bookings, 0),
         })
 
     return {

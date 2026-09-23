@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 	app_name: str = "Physio Desk API"
 	database_url: str = "postgresql+psycopg2://physio:physio@localhost:5432/physio_desk"
 	cors_origins: str = "http://localhost:3000"
-	jwt_secret_key: str = "super-secret-key-change-this"
+	jwt_secret_key: str
 	jwt_algorithm: str = "HS256"
 	access_token_expire_minutes: int = 60
 	refresh_token_expire_days: int = 7

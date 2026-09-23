@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.therapist import Therapist
+from app.models.appointment import Appointment
+from app.models.patient import Patient
 from app.models.user import User
 from app.schemas import TherapistCreate, TherapistRead
 
@@ -75,6 +77,8 @@ def delete_therapist(therapist_id: int, db: Session = Depends(get_db), current_u
     therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
     if not therapist:
         raise HTTPException(status_code=404, detail="Therapist not found")
+    if db.query(Appointment).filter(Appointment.therapist_id == therapist.id).first() or db.query(Patient).filter(Patient.assigned_therapist_id == therapist.id).first():
+        raise HTTPException(status_code=409, detail="Therapist has related records and cannot be deleted")
     db.delete(therapist)
     db.commit()
     return {"message": "Therapist removed"}

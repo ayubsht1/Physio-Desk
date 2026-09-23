@@ -1,0 +1,238 @@
+{
+  "info": {
+    "name": "Physio Desk API",
+    "description": "Requests for the Physio Desk backend. Run Login first to populate accessToken and refreshToken.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "patientId", "value": "1" },
+    { "key": "therapistId", "value": "1" },
+    { "key": "appointmentId", "value": "1" },
+    { "key": "invoiceId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.access_token);",
+                  "pm.collectionVariables.set('refreshToken', body.refresh_token);",
+                  "pm.test('Login succeeded', function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.access_token);",
+                  "pm.collectionVariables.set('refreshToken', body.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Therapists",
+      "item": [
+        {
+          "name": "List therapists",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/therapists", "host": ["{{baseUrl}}"], "path": ["therapists"] }
+          }
+        },
+        {
+          "name": "Create therapist",
+          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "pm.collectionVariables.set('therapistId', body.id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Alex Morgan\",\n  \"specialty\": \"Sports Rehabilitation\",\n  \"working_days\": \"Mon,Tue,Wed,Thu,Fri\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"17:00\",\n  \"slot_duration\": 30,\n  \"is_active\": true,\n  \"notes\": \"New therapist\"\n}" },
+            "url": { "raw": "{{baseUrl}}/therapists", "host": ["{{baseUrl}}"], "path": ["therapists"] }
+          }
+        },
+        {
+          "name": "Update therapist",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Alex Morgan\",\n  \"specialty\": \"Sports Rehabilitation\",\n  \"working_days\": \"Mon,Tue,Wed,Thu,Fri\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"17:00\",\n  \"slot_duration\": 30,\n  \"is_active\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/therapists/{{therapistId}}", "host": ["{{baseUrl}}"], "path": ["therapists", "{{therapistId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "List patients",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/patients?status=Active", "host": ["{{baseUrl}}"], "path": ["patients"], "query": [{ "key": "status", "value": "Active" }] }
+          }
+        },
+        {
+          "name": "Create patient",
+          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "pm.collectionVariables.set('patientId', body.id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jordan Lee\",\n  \"phone\": \"555-2000\",\n  \"age\": 34,\n  \"gender\": \"Other\",\n  \"address\": \"100 Main Street\",\n  \"condition\": \"Lower back pain\",\n  \"assigned_therapist_id\": {{therapistId}},\n  \"package\": \"Recovery Plus\",\n  \"status\": \"Active\"\n}" },
+            "url": { "raw": "{{baseUrl}}/patients", "host": ["{{baseUrl}}"], "path": ["patients"] }
+          }
+        },
+        {
+          "name": "Patient detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/patients/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["patients", "{{patientId}}"] }
+          }
+        },
+        {
+          "name": "Update patient",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"condition\": \"Improving lower back pain\",\n  \"status\": \"Active\"\n}" },
+            "url": { "raw": "{{baseUrl}}/patients/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["patients", "{{patientId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "List appointments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/appointments", "host": ["{{baseUrl}}"], "path": ["appointments"] }
+          }
+        },
+        {
+          "name": "Create appointment",
+          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "pm.collectionVariables.set('appointmentId', body.id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patient_id\": {{patientId}},\n  \"therapist_id\": {{therapistId}},\n  \"appointment_date\": \"2026-09-24\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"09:30\",\n  \"status\": \"Booked\",\n  \"payment_method\": \"Card\",\n  \"notes\": \"Initial treatment session\"\n}" },
+            "url": { "raw": "{{baseUrl}}/appointments", "host": ["{{baseUrl}}"], "path": ["appointments"] }
+          }
+        },
+        {
+          "name": "Update appointment",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patient_id\": {{patientId}},\n  \"therapist_id\": {{therapistId}},\n  \"appointment_date\": \"2026-09-24\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"09:30\",\n  \"status\": \"Completed\",\n  \"payment_method\": \"Card\"\n}" },
+            "url": { "raw": "{{baseUrl}}/appointments/{{appointmentId}}", "host": ["{{baseUrl}}"], "path": ["appointments", "{{appointmentId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Billing",
+      "item": [
+        {
+          "name": "List invoices",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/billing", "host": ["{{baseUrl}}"], "path": ["billing"] }
+          }
+        },
+        {
+          "name": "Create invoice",
+          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "pm.collectionVariables.set('invoiceId', body.id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patient_id\": {{patientId}},\n  \"service\": \"Physiotherapy session\",\n  \"invoice_date\": \"2026-09-23\",\n  \"amount\": 150,\n  \"discount\": 0,\n  \"status\": \"Due\",\n  \"payment_method\": \"Card\"\n}" },
+            "url": { "raw": "{{baseUrl}}/billing", "host": ["{{baseUrl}}"], "path": ["billing"] }
+          }
+        },
+        {
+          "name": "Update invoice",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patient_id\": {{patientId}},\n  \"service\": \"Physiotherapy session\",\n  \"invoice_date\": \"2026-09-23\",\n  \"amount\": 150,\n  \"discount\": 0,\n  \"status\": \"Paid\",\n  \"payment_method\": \"Card\"\n}" },
+            "url": { "raw": "{{baseUrl}}/billing/{{invoiceId}}", "host": ["{{baseUrl}}"], "path": ["billing", "{{invoiceId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Dashboard statistics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/dashboard", "host": ["{{baseUrl}}"], "path": ["dashboard"] }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,8 @@
-from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.scheduling import ensure_no_overlap, validate_appointment_schedule
 from app.core.security import get_current_user, require_roles
 from app.models.appointment import Appointment
 from app.models.patient import Patient
@@ -42,17 +41,10 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     therapist = db.query(Therapist).filter(Therapist.id == payload.therapist_id).first()
     if not patient or not therapist:
         raise HTTPException(status_code=400, detail="Patient or therapist not found")
-    existing = (
-        db.query(Appointment)
-        .filter(
-            Appointment.therapist_id == payload.therapist_id,
-            Appointment.appointment_date == payload.appointment_date,
-            Appointment.start_time == payload.start_time,
-        )
-        .first()
-    )
-    if existing:
-        raise HTTPException(status_code=409, detail="This therapist slot is already booked")
+    if not therapist.is_active:
+        raise HTTPException(status_code=400, detail="Therapist is inactive")
+    validate_appointment_schedule(therapist, payload.appointment_date, payload.start_time, payload.end_time)
+    ensure_no_overlap(db.query(Appointment), payload.therapist_id, payload.appointment_date, payload.start_time, payload.end_time)
     item = Appointment(**payload.model_dump())
     db.add(item)
     db.commit()
@@ -78,6 +70,21 @@ def update_appointment(appointment_id: int, payload: AppointmentCreate, db: Sess
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
+    patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
+    therapist = db.query(Therapist).filter(Therapist.id == payload.therapist_id).first()
+    if not patient or not therapist:
+        raise HTTPException(status_code=400, detail="Patient or therapist not found")
+    if not therapist.is_active and payload.status != "Cancelled":
+        raise HTTPException(status_code=400, detail="Therapist is inactive")
+    validate_appointment_schedule(therapist, payload.appointment_date, payload.start_time, payload.end_time)
+    ensure_no_overlap(
+        db.query(Appointment),
+        payload.therapist_id,
+        payload.appointment_date,
+        payload.start_time,
+        payload.end_time,
+        appointment.id,
+    )
     for field, value in payload.model_dump().items():
         setattr(appointment, field, value)
     db.commit()
