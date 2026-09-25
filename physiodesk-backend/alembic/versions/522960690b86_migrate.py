@@ -265,62 +265,52 @@ def upgrade() -> None:
     # ---------------------------------------------------------
     # Users
     # ---------------------------------------------------------
-    with op.batch_alter_table("users") as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "first_name",
-                sa.String(length=80),
-                nullable=False,
-                server_default="",
-            )
+with op.batch_alter_table("users") as batch_op:
+    batch_op.add_column(
+        sa.Column(
+            "first_name",
+            sa.String(length=80),
+            nullable=False,
+            server_default="",
         )
+    )
 
-        batch_op.add_column(
-            sa.Column(
-                "middle_name",
-                sa.String(length=80),
-                nullable=True,
-            )
+    batch_op.add_column(
+        sa.Column(
+            "middle_name",
+            sa.String(length=80),
+            nullable=True,
         )
+    )
 
-        batch_op.add_column(
-            sa.Column(
-                "last_name",
-                sa.String(length=80),
-                nullable=False,
-                server_default="",
-            )
+    batch_op.add_column(
+        sa.Column(
+            "last_name",
+            sa.String(length=80),
+            nullable=False,
+            server_default="",
         )
+    )
 
-        batch_op.add_column(
-            sa.Column(
-                "created_at",
-                sa.DateTime(),
-                nullable=False,
-                server_default=sa.func.now(),
-            )
+    batch_op.add_column(
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.func.now(),
         )
+    )
 
-        batch_op.add_column(
-            sa.Column(
-                "updated_at",
-                sa.DateTime(),
-                nullable=False,
-                server_default=sa.func.now(),
-            )
+    batch_op.add_column(
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.func.now(),
         )
+    )
 
-        batch_op.drop_constraint(
-            "users_email_key",
-            type_="unique",
-        )
-
-        batch_op.drop_constraint(
-            "users_username_key",
-            type_="unique",
-        )
-
-        batch_op.drop_column("full_name")
+    batch_op.drop_column("full_name")
 
 
 def downgrade() -> None:
