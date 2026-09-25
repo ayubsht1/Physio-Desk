@@ -1,37 +1,34 @@
 # Physio Desk Backend
 
-## Setup
+FastAPI service for authentication, dashboard statistics, patients, appointments, therapists, services, billing, and admin users.
+
+## Local setup
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Set a unique `JWT_SECRET_KEY` and a reachable PostgreSQL `DATABASE_URL` in `.env`.
+Set a unique `JWT_SECRET_KEY` in `.env`. For local development, use the PostgreSQL service from the repository root with the default `DATABASE_URL`.
 
-## Database
-
-Run migrations before seeding data:
+## Database and seed data
 
 ```powershell
 alembic upgrade head
 python create_seed_data.py
 ```
 
-The seed script expects the schema to already exist and is idempotent when users are present.
+The seed is idempotent at the user level and includes admin/staff accounts, therapists, services, patients, appointments, and invoices.
 
-## Run
-
-```powershell
-uvicorn app.main:app --reload
-```
-
-API documentation is available at `http://127.0.0.1:8000/docs`.
-
-## Tests
+## Run and test
 
 ```powershell
+uvicorn app.main:app --reload --port 8000
 pytest -q
 ```
+
+API documentation is available at `http://localhost:8000/docs`.
+
+For the complete stack, run `docker compose up --build` from the repository root.

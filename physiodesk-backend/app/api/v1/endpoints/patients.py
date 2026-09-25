@@ -20,7 +20,7 @@ def list_patients(
     status_filter: str | None = Query(default=None, alias="status"),
     include_inactive: bool = Query(default=False),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     query = db.query(Patient)
 
@@ -118,7 +118,7 @@ def get_patient(
 def create_patient(
     payload: PatientCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     if payload.assigned_therapist_id:
         therapist = db.query(Therapist).filter(Therapist.id == payload.assigned_therapist_id).first()

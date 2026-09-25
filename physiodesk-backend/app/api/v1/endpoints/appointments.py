@@ -28,6 +28,8 @@ def format_appointment(item: Appointment) -> dict:
         "status": item.status,
         "reason": item.reason,
         "notes": item.notes,
+        "service": item.service.name if item.service else item.reason,
+        "payment_method": None,
         "patient_name": item.patient.name if item.patient else None,
         "therapist_name": item.therapist.name if item.therapist else None,
         "created_by": item.created_by,

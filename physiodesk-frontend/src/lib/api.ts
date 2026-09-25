@@ -25,6 +25,50 @@ export type UserPayload = {
   phone?: string | null;
 };
 
+function userPayloadForBackend(payload: UserPayload | Partial<UserPayload>) {
+  const fullName = payload.full_name?.trim().split(/\s+/) ?? [];
+  const { full_name: _, phone: __, ...rest } = payload;
+  const result = {
+    ...rest,
+  };
+  if (payload.full_name) {
+    return {
+      ...result,
+      first_name: fullName[0] ?? "Staff",
+      last_name: fullName.slice(1).join(" ") || "User",
+      password: "password" in payload && payload.password ? payload.password : "welcome123",
+    };
+  }
+  return result;
+}
+
+function appointmentPayloadForBackend(payload: AppointmentPayload | Partial<AppointmentPayload>) {
+  const { service: _, payment_method: __, ...rest } = payload;
+  return {
+    ...rest,
+    reason: ("reason" in payload ? payload.reason : undefined) ?? payload.service ?? undefined,
+    status: payload.status === "Booked" ? "Scheduled" : payload.status,
+  };
+}
+
+function invoicePayloadForBackend(payload: InvoicePayload | Partial<InvoicePayload>) {
+  const { service: _, amount, payment_method: __, ...rest } = payload;
+  return {
+    ...rest,
+    subtotal: payload.subtotal ?? amount ?? 0,
+    total: payload.total ?? amount ?? 0,
+    invoice_date: payload.invoice_date ?? new Date().toISOString().slice(0, 10),
+  };
+}
+
+function servicePayloadForBackend(payload: ServicePayload | Partial<ServicePayload>) {
+  const { service_id: _, category: __, indications: ___, duration, ...rest } = payload;
+  return {
+    ...rest,
+    duration: typeof duration === "number" ? duration : Number.parseInt(duration ?? "45", 10) || 45,
+  };
+}
+
 export type ClinicService = {
   id: number;
   service_id: string;
@@ -96,24 +140,32 @@ export type Appointment = {
   id: number;
   patient_id: number;
   therapist_id: number;
+  service_id?: number | null;
   appointment_date: string;
   start_time: string;
   end_time: string;
-  status: "Booked" | "Completed" | "Cancelled" | "No-show";
+  status: "Booked" | "Scheduled" | "Confirmed" | "Completed" | "Cancelled" | "No-show";
   payment_method?: string | null;
   notes?: string | null;
   patient_name?: string | null;
   therapist_name?: string | null;
   service?: string | null;
+  reason?: string | null;
   created_at?: string;
 };
 
 export type Invoice = {
   id: number;
+  invoice_number?: string;
   patient_id: number;
+  appointment_id?: number | null;
+  service_id?: number | null;
   service: string;
   invoice_date: string;
   amount: number;
+  subtotal?: number;
+  tax?: number;
+  total?: number;
   status: "Paid" | "Due" | "Void";
   payment_method?: string | null;
   discount: number;
@@ -243,15 +295,15 @@ export const api = {
     return request<Appointment[]>(`/appointments${qs ? `?${qs}` : ""}`);
   },
   createAppointment: (payload: AppointmentPayload) =>
-    request<Appointment>("/appointments", { method: "POST", body: JSON.stringify(payload) }),
+    request<Appointment>("/appointments", { method: "POST", body: JSON.stringify(appointmentPayloadForBackend(payload)) }),
   updateAppointment: (id: number, payload: Partial<AppointmentPayload>) =>
-    request<Appointment>(`/appointments/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    request<Appointment>(`/appointments/${id}`, { method: "PUT", body: JSON.stringify(appointmentPayloadForBackend(payload)) }),
   deleteAppointment: (id: number) => request<void>(`/appointments/${id}`, { method: "DELETE" }),
   invoices: (status = "") => request<Invoice[]>(`/billing${status ? `?status=${status}` : ""}`),
   createInvoice: (payload: InvoicePayload) =>
-    request<Invoice>("/billing", { method: "POST", body: JSON.stringify(payload) }),
+    request<Invoice>("/billing", { method: "POST", body: JSON.stringify(invoicePayloadForBackend(payload)) }),
   updateInvoice: (id: number, payload: InvoicePayload) =>
-    request<Invoice>(`/billing/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    request<Invoice>(`/billing/${id}`, { method: "PUT", body: JSON.stringify(invoicePayloadForBackend(payload)) }),
   deleteInvoice: (id: number) => request<void>(`/billing/${id}`, { method: "DELETE" }),
   users: (params?: { search?: string; role?: string }) => {
     const q = new URLSearchParams();
@@ -261,9 +313,9 @@ export const api = {
     return request<User[]>(`/users${qs ? `?${qs}` : ""}`);
   },
   createUser: (payload: UserPayload) =>
-    request<User>("/users", { method: "POST", body: JSON.stringify(payload) }),
+    request<User>("/users", { method: "POST", body: JSON.stringify(userPayloadForBackend(payload)) }),
   updateUser: (id: number, payload: Partial<UserPayload>) =>
-    request<User>(`/users/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    request<User>(`/users/${id}`, { method: "PUT", body: JSON.stringify(userPayloadForBackend(payload)) }),
   deleteUser: (id: number) =>
     request<{ message: string }>(`/users/${id}`, { method: "DELETE" }),
   services: (params?: { category?: string; include_inactive?: boolean }) => {
@@ -274,9 +326,9 @@ export const api = {
     return request<ClinicService[]>(`/services${qs ? `?${qs}` : ""}`);
   },
   createService: (payload: ServicePayload) =>
-    request<ClinicService>("/services", { method: "POST", body: JSON.stringify(payload) }),
+    request<ClinicService>("/services", { method: "POST", body: JSON.stringify(servicePayloadForBackend(payload)) }),
   updateService: (id: number, payload: Partial<ServicePayload>) =>
-    request<ClinicService>(`/services/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    request<ClinicService>(`/services/${id}`, { method: "PUT", body: JSON.stringify(servicePayloadForBackend(payload)) }),
   deleteService: (id: number) =>
     request<{ message: string }>(`/services/${id}`, { method: "DELETE" }),
 };

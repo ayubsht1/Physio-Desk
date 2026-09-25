@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   UserCheck,
   Sparkles,
+  Download,
 } from "lucide-react";
 import {
   api,
@@ -57,6 +58,64 @@ type View =
 
 function money(value: number) {
   return `Rs. ${Number(value || 0).toLocaleString("en-NP")}`;
+}
+
+async function downloadInvoicePdf(invoice: Invoice) {
+  const { jsPDF } = await import("jspdf");
+  const document = new jsPDF();
+  const subtotal = invoice.subtotal ?? invoice.amount;
+  const discount = invoice.discount ?? 0;
+  const total = invoice.total ?? Math.max(subtotal - discount, 0);
+  const invoiceNumber = invoice.invoice_number ?? `INV-${invoice.id}`;
+
+  document.setFillColor(19, 36, 32);
+  document.rect(0, 0, 210, 38, "F");
+  document.setTextColor(240, 223, 199);
+  document.setFontSize(22);
+  document.text("Physio Desk", 20, 18);
+  document.setFontSize(10);
+  document.text("Rehabilitation & Performance Clinic", 20, 27);
+
+  document.setTextColor(24, 34, 30);
+  document.setFontSize(16);
+  document.text("INVOICE", 20, 58);
+  document.setFontSize(10);
+  document.text(`Invoice: ${invoiceNumber}`, 20, 67);
+  document.text(`Date: ${invoice.invoice_date}`, 20, 74);
+  document.text(`Status: ${invoice.status}`, 140, 67);
+
+  document.setDrawColor(222, 213, 194);
+  document.line(20, 84, 190, 84);
+  document.setFontSize(11);
+  document.text("Bill to", 20, 97);
+  document.setFontSize(12);
+  document.text(invoice.patient_name ?? "Patient", 20, 106);
+  document.setFontSize(10);
+  document.text(invoice.service ?? "Physiotherapy treatment", 20, 116);
+
+  document.line(20, 129, 190, 129);
+  document.text("Description", 20, 140);
+  document.text("Amount", 158, 140);
+  document.line(20, 145, 190, 145);
+  document.text(invoice.service ?? "Treatment session", 20, 156);
+  document.text(money(subtotal), 158, 156);
+  document.text("Discount", 20, 167);
+  document.text(`-${money(discount)}`, 158, 167);
+  document.line(20, 174, 190, 174);
+  document.setFontSize(12);
+  document.text("Total", 20, 187);
+  document.text(money(total), 158, 187);
+
+  if (invoice.notes) {
+    document.setFontSize(10);
+    document.text("Notes", 20, 207);
+    document.text(document.splitTextToSize(invoice.notes, 170), 20, 216);
+  }
+
+  document.setTextColor(113, 106, 93);
+  document.setFontSize(9);
+  document.text("Thank you for choosing Physio Desk.", 20, 278);
+  document.save(`${invoiceNumber}.pdf`);
 }
 
 function StatusBadge({ text }: { text: string }) {
@@ -1432,6 +1491,15 @@ function BillingTab({
                     <StatusBadge text={inv.status} />
                   </td>
                   <td className="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      title="Download invoice PDF"
+                      aria-label={`Download invoice ${inv.invoice_number ?? inv.id} as PDF`}
+                      onClick={() => downloadInvoicePdf(inv)}
+                      className="inline-flex items-center justify-center p-1.5 mr-2 text-[#554d40] hover:text-[#b8763a] hover:bg-[#fbf4e8] rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
                     {inv.status === "Due" && (
                       <button
                         onClick={async () => {

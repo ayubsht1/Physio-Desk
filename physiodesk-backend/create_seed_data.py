@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import Appointment, Invoice, Patient, Therapist, User
+from app.models import Appointment, Invoice, Patient, Service, Therapist, User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 engine = create_engine(settings.database_url)
@@ -46,7 +46,45 @@ def seed() -> None:
         session.add_all([admin, staff])
         session.flush()
 
-        # 2. Therapists
+        # 2. Services
+        services = [
+            Service(
+                name="Sports Injury & ACL Rehabilitation",
+                description="Targeted rehabilitation for acute joint sprains, ligament recovery, and return-to-play testing.",
+                duration=45,
+                price=1800,
+                is_active=True,
+                is_deleted=False,
+            ),
+            Service(
+                name="Spine, Posture & Cervical Decompression",
+                description="Evidence-based care for lumbar pain, ergonomic stiffness, sciatica, and cervical symptoms.",
+                duration=45,
+                price=1500,
+                is_active=True,
+                is_deleted=False,
+            ),
+            Service(
+                name="Neurological & Stroke Rehabilitation",
+                description="Gait retraining, balance work, vestibular therapy, and post-stroke functional recovery.",
+                duration=45,
+                price=2000,
+                is_active=True,
+                is_deleted=False,
+            ),
+            Service(
+                name="Manual Therapy & Joint Mobilization",
+                description="Hands-on joint mobilization, myofascial release, and orthopedic rehabilitation.",
+                duration=60,
+                price=2200,
+                is_active=True,
+                is_deleted=False,
+            ),
+        ]
+        session.add_all(services)
+        session.flush()
+
+        # 3. Therapists
         therapists = [
             Therapist(
                 name="Dr. Maya Chen, DPT",
@@ -101,10 +139,14 @@ def seed() -> None:
                 notes="Deep tissue mobilization, myofascial trigger point release, and joint manipulation.",
             ),
         ]
+        therapists[0].services = [services[0], services[1]]
+        therapists[1].services = [services[1], services[2]]
+        therapists[2].services = [services[1]]
+        therapists[3].services = [services[3]]
         session.add_all(therapists)
         session.flush()
 
-        # 3. Patients
+        # 4. Patients
         today = date.today()
         patients = [
             Patient(
@@ -239,7 +281,7 @@ def seed() -> None:
         session.add_all(patients)
         session.flush()
 
-        # 4. Appointments
+        # 5. Appointments
         appointments = [
             # Today's appointments
             Appointment(
@@ -332,7 +374,7 @@ def seed() -> None:
         session.add_all(appointments)
         session.flush()
 
-        # 5. Invoices
+        # 6. Invoices
         invoices = [
             Invoice(
                 invoice_number="INV-20260925-1001",

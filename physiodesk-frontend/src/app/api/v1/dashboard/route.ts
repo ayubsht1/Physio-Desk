@@ -1,8 +1,5 @@
-import { NextResponse } from "next/server";
-import { getStore } from "@/lib/server-db";
+import { proxyBackend } from "@/lib/backend";
 
-export async function GET() {
-  const store = getStore();
-  const dashboard = store.getDashboard();
-  return NextResponse.json(dashboard);
+export async function GET(request: Request) {
+  return proxyBackend(request, "/dashboard");
 }

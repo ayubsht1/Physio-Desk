@@ -17,5 +17,29 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./physiodesk-backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://physio:physio@postgres:5432/physio_desk
+      CORS_ORIGINS: http://localhost:3000
+      JWT_SECRET_KEY: change-this-development-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./physiodesk-frontend
+    environment:
+      BACKEND_API_URL: http://backend:8000/api/v1
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
 volumes:
   physio-desk-data:

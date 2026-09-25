@@ -190,7 +190,9 @@ class ServiceUpdate(BaseModel):
 
 class ServiceRead(BaseModel):
     id: int
+    service_id: str | None = None
     name: str
+    category: str = "General Physiotherapy"
     description: str | None = None
     duration: int
     price: float
@@ -382,6 +384,8 @@ class AppointmentRead(BaseModel):
 
     reason: str | None = None
     notes: str | None = None
+    service: str | None = None
+    payment_method: str | None = None
 
     status: str
 
@@ -437,6 +441,8 @@ class InvoiceRead(BaseModel):
     discount: float = 0.0
     tax: float = 0.0
     total: float
+    amount: float | None = None
+    service: str | None = None
     status: str
     notes: str | None = None
     patient_name: str | None = None

@@ -38,6 +38,8 @@ def format_invoice(invoice: Invoice) -> dict:
         "discount": float(invoice.discount),
         "tax": float(invoice.tax),
         "total": float(invoice.total),
+        "amount": float(invoice.total),
+        "service": invoice.service.name if invoice.service else None,
         "status": invoice.status,
         "notes": invoice.notes,
         "patient_name": invoice.patient.name if invoice.patient else None,
