@@ -99,7 +99,7 @@ export function Footer() {
         </div>
 
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#7d8885]">
-          <p>© {new Date().getFullYear()} Physio Desk Clinical Practice. Ayub Shrestha All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Physio Desk Clinical Practice. Ayub Shrestha(ayubsht1@gmail.com) All rights reserved.</p>
           <div className="flex items-center gap-6">
             <span>HIPAA Compliant Patient Intake</span>
             <span>Accredited Physical Therapy Facility</span>
