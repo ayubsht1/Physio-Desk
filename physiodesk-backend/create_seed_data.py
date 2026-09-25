@@ -19,30 +19,32 @@ def seed() -> None:
             print("Database already contains user records. Skipping seed.")
             return
 
-        print("Seeding fresh production-grade data...")
+        print("Seeding Nepal-based clinic data...")
 
-        # 1. Users (Admin and Staff)
+        # 1. Users
         admin = User(
             username="admin",
             email="admin@physiodesk.com",
-            first_name="Aisha",
-            middle_name="K.",
-            last_name="Patel",
+            first_name="Prakash",
+            middle_name="Raj",
+            last_name="Shrestha",
             password_hash=pwd_context.hash("admin123"),
             role="admin",
             is_active=True,
-            notes="Clinical Director & Lead Physical Therapist",
+            notes="Clinic Administrator & Senior Physiotherapist",
         )
+
         staff = User(
-            username="staff",
+            username="reception",
             email="reception@physiodesk.com",
-            first_name="Sam",
-            last_name="Rivera",
+            first_name="Sushmita",
+            last_name="Adhikari",
             password_hash=pwd_context.hash("staff123"),
             role="staff",
             is_active=True,
-            notes="Senior Desk Coordinator & Patient Concierge",
+            notes="Reception & Patient Coordinator",
         )
+
         session.add_all([admin, staff])
         session.flush()
 
@@ -50,15 +52,21 @@ def seed() -> None:
         services = [
             Service(
                 name="Sports Injury & ACL Rehabilitation",
-                description="Targeted rehabilitation for acute joint sprains, ligament recovery, and return-to-play testing.",
+                description=(
+                    "Rehabilitation for sports injuries, ligament recovery, "
+                    "ACL rehabilitation, strength training, and return-to-sport programs."
+                ),
                 duration=45,
                 price=1800,
                 is_active=True,
                 is_deleted=False,
             ),
             Service(
-                name="Spine, Posture & Cervical Decompression",
-                description="Evidence-based care for lumbar pain, ergonomic stiffness, sciatica, and cervical symptoms.",
+                name="Back, Neck & Posture Rehabilitation",
+                description=(
+                    "Physiotherapy for back pain, neck pain, sciatica, "
+                    "postural problems, and work-related musculoskeletal conditions."
+                ),
                 duration=45,
                 price=1500,
                 is_active=True,
@@ -66,218 +74,265 @@ def seed() -> None:
             ),
             Service(
                 name="Neurological & Stroke Rehabilitation",
-                description="Gait retraining, balance work, vestibular therapy, and post-stroke functional recovery.",
+                description=(
+                    "Individualized rehabilitation for stroke recovery, "
+                    "balance problems, gait training, and neurological conditions."
+                ),
                 duration=45,
                 price=2000,
                 is_active=True,
                 is_deleted=False,
             ),
             Service(
-                name="Manual Therapy & Joint Mobilization",
-                description="Hands-on joint mobilization, myofascial release, and orthopedic rehabilitation.",
+                name="Manual Therapy & Joint Rehabilitation",
+                description=(
+                    "Hands-on physiotherapy including joint mobilization, "
+                    "soft tissue therapy, stretching, and orthopedic rehabilitation."
+                ),
                 duration=60,
                 price=2200,
                 is_active=True,
                 is_deleted=False,
             ),
         ]
+
         session.add_all(services)
         session.flush()
 
         # 3. Therapists
         therapists = [
             Therapist(
-                name="Dr. Maya Chen, DPT",
-                specialty="Sports Rehab & Musculoskeletal",
-                license_number="PT-88214",
-                phone="+1 (555) 012-3401",
-                email="m.chen@physiodesk.com",
+                name="Dr. Sagar Koirala, PT",
+                specialty="Sports Rehabilitation & Musculoskeletal",
+                license_number="PT-NPL-10241",
+                phone="+977 9841234567",
+                email="sagar.koirala@physiodesk.com",
                 working_days="Mon,Tue,Wed,Thu,Fri",
                 start_time="09:00",
                 end_time="17:00",
                 slot_duration=30,
                 is_active=True,
-                notes="Specialist in athletic recovery, rotator cuff repairs, and ACL post-op protocols.",
+                notes=(
+                    "Specializes in sports injuries, ACL rehabilitation, "
+                    "shoulder injuries, strength training, and return-to-sport programs."
+                ),
             ),
             Therapist(
-                name="Dr. Daniel Brooks, PT",
+                name="Dr. Anisha Thapa, PT",
                 specialty="Neurological Rehabilitation",
-                license_number="PT-77142",
-                phone="+1 (555) 012-3402",
-                email="d.brooks@physiodesk.com",
+                license_number="PT-NPL-10873",
+                phone="+977 9851023456",
+                email="anisha.thapa@physiodesk.com",
                 working_days="Mon,Tue,Wed,Fri",
                 start_time="08:30",
                 end_time="16:30",
                 slot_duration=45,
                 is_active=True,
-                notes="Experienced in stroke recovery, vestibular therapy, and gait retraining.",
+                notes=(
+                    "Experienced in stroke rehabilitation, neurological conditions, "
+                    "balance training, gait retraining, and functional recovery."
+                ),
             ),
             Therapist(
-                name="Dr. Priya Shah, MPT",
-                specialty="Posture, Spine & Mobility",
-                license_number="PT-93401",
-                phone="+1 (555) 012-3403",
-                email="p.shah@physiodesk.com",
+                name="Dr. Rojina Gurung, MPT",
+                specialty="Spine, Posture & Mobility",
+                license_number="PT-NPL-11452",
+                phone="+977 9860123789",
+                email="rojina.gurung@physiodesk.com",
                 working_days="Tue,Wed,Thu,Fri,Sat",
                 start_time="10:00",
                 end_time="18:00",
                 slot_duration=30,
                 is_active=True,
-                notes="Ergonomics specialist, cervical spine decompression, and pelvic floor conditioning.",
+                notes=(
+                    "Focuses on back and neck pain, posture correction, "
+                    "ergonomics, mobility training, and chronic pain management."
+                ),
             ),
             Therapist(
-                name="Dr. Lucas Martin, PT",
-                specialty="Manual Therapy & Joint Orthopedics",
-                license_number="PT-65239",
-                phone="+1 (555) 012-3404",
-                email="l.martin@physiodesk.com",
+                name="Dr. Bibek Poudel, PT",
+                specialty="Manual Therapy & Orthopedic Rehabilitation",
+                license_number="PT-NPL-11908",
+                phone="+977 9818456723",
+                email="bibek.poudel@physiodesk.com",
                 working_days="Mon,Wed,Fri",
                 start_time="12:00",
                 end_time="18:00",
                 slot_duration=60,
                 is_active=True,
-                notes="Deep tissue mobilization, myofascial trigger point release, and joint manipulation.",
+                notes=(
+                    "Specializes in manual therapy, joint mobilization, "
+                    "soft tissue treatment, and post-operative rehabilitation."
+                ),
             ),
         ]
+
         therapists[0].services = [services[0], services[1]]
         therapists[1].services = [services[1], services[2]]
         therapists[2].services = [services[1]]
         therapists[3].services = [services[3]]
+
         session.add_all(therapists)
         session.flush()
 
         # 4. Patients
         today = date.today()
+
         patients = [
             Patient(
-                first_name="Nina",
-                last_name="Foster",
-                date_of_birth=date(1995, 4, 12),
-                gender="Female",
-                phone="+1 (555) 234-1001",
-                email="nina.foster@example.com",
-                address="12 Oak Avenue, Metro City",
+                first_name="Aayush",
+                last_name="Sharma",
+                date_of_birth=date(1998, 4, 12),
+                gender="Male",
+                phone="+977 9801234567",
+                email="aayush.sharma@example.com",
+                address="Baneshwor, Kathmandu",
                 blood_group="O+",
-                allergies="Latex, Penicillin",
-                medical_notes="Acute grade II ACL sprain from tennis. Prescribed isometric quad activation and cryotherapy.",
+                allergies="None reported",
+                medical_notes=(
+                    "Grade II ACL injury from football. Currently undergoing "
+                    "strengthening, mobility, and progressive return-to-sport rehabilitation."
+                ),
                 assigned_therapist_id=therapists[0].id,
                 status="Active",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=12),
             ),
             Patient(
-                first_name="Omar",
-                last_name="Lee",
+                first_name="Mina",
+                last_name="Gurung",
                 date_of_birth=date(1982, 9, 23),
-                gender="Male",
-                phone="+1 (555) 234-1002",
-                email="omar.lee@example.com",
-                address="44 Pine Street, Apt 3B, Metro City",
+                gender="Female",
+                phone="+977 9812345678",
+                email="mina.gurung@example.com",
+                address="Lalitpur, Bagmati",
                 blood_group="A+",
                 allergies="None reported",
-                medical_notes="Chronic lower lumbar disc herniation (L4-L5). Core stabilization and spinal traction protocol.",
+                medical_notes=(
+                    "Chronic lower back pain with L4-L5 disc-related symptoms. "
+                    "Following core stabilization, mobility, and posture program."
+                ),
                 assigned_therapist_id=therapists[1].id,
                 status="Completed",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=35),
             ),
             Patient(
-                first_name="Sara",
-                last_name="Nguyen",
+                first_name="Bikash",
+                last_name="Tamang",
                 date_of_birth=date(1989, 11, 5),
-                gender="Female",
-                phone="+1 (555) 234-1003",
-                email="sara.n@example.com",
-                address="78 Cedar Road, Highlands",
+                gender="Male",
+                phone="+977 9823456789",
+                email="bikash.tamang@example.com",
+                address="Kirtipur, Kathmandu",
                 blood_group="B+",
                 allergies="Ibuprofen",
-                medical_notes="Right rotator cuff tendinitis and impingement syndrome. Active release therapy and banded external rotations.",
+                medical_notes=(
+                    "Right shoulder pain and rotator cuff tendinopathy. "
+                    "Receiving mobility exercises, strengthening, and manual therapy."
+                ),
                 assigned_therapist_id=therapists[2].id,
                 status="Active",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=8),
             ),
             Patient(
-                first_name="Hugo",
-                last_name="Perez",
+                first_name="Sarita",
+                last_name="KC",
                 date_of_birth=date(1973, 2, 18),
-                gender="Male",
-                phone="+1 (555) 234-1004",
-                email="hugo.perez@example.com",
-                address="19 Palm Boulevard, Westside",
+                gender="Female",
+                phone="+977 9834567890",
+                email="sarita.kc@example.com",
+                address="Boudha, Kathmandu",
                 blood_group="AB+",
                 allergies="Sulfa drugs",
-                medical_notes="Bilateral hip labral tear with early osteoarthritis. Hydrotherapy and glute strengthening.",
+                medical_notes=(
+                    "Bilateral hip pain with early osteoarthritis. "
+                    "Working on mobility, hip strengthening, and functional exercises."
+                ),
                 assigned_therapist_id=therapists[0].id,
                 status="On hold",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=22),
             ),
             Patient(
-                first_name="Alicia",
-                last_name="Ford",
+                first_name="Hari",
+                last_name="Bhandari",
                 date_of_birth=date(1962, 7, 30),
-                gender="Female",
-                phone="+1 (555) 234-1005",
-                email="alicia.ford@example.com",
-                address="91 Elm Lane, Greenfield",
+                gender="Male",
+                phone="+977 9845678901",
+                email="hari.bhandari@example.com",
+                address="Maharajgunj, Kathmandu",
                 blood_group="O-",
-                allergies="None",
-                medical_notes="Post-total knee arthroplasty (left). Range of motion recovery currently at 105 degrees flexion.",
+                allergies="None reported",
+                medical_notes=(
+                    "Post-operative rehabilitation following left total knee replacement. "
+                    "Working on range of motion, gait training, and lower-limb strength."
+                ),
                 assigned_therapist_id=therapists[3].id,
                 status="Active",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=19),
             ),
             Patient(
-                first_name="Mason",
-                last_name="Reed",
+                first_name="Nischal",
+                last_name="Rai",
                 date_of_birth=date(1997, 6, 14),
                 gender="Male",
-                phone="+1 (555) 234-1006",
-                email="mason.reed@example.com",
-                address="31 Birch Way, Midtown",
+                phone="+977 9856789012",
+                email="nischal.rai@example.com",
+                address="Koteshwor, Kathmandu",
                 blood_group="A-",
                 allergies="Aspirin",
-                medical_notes="High ankle syndesmosis sprain. Proprioception drills and wobble board balance progression.",
+                medical_notes=(
+                    "High ankle sprain following recreational football. "
+                    "Currently progressing through balance, proprioception, and strengthening exercises."
+                ),
                 assigned_therapist_id=therapists[1].id,
                 status="Active",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=15),
             ),
             Patient(
-                first_name="Zoe",
-                last_name="Kim",
+                first_name="Pratiksha",
+                last_name="Magar",
                 date_of_birth=date(1991, 1, 8),
                 gender="Female",
-                phone="+1 (555) 234-1007",
-                email="zoe.kim@example.com",
-                address="66 Willow Street, Downtown",
+                phone="+977 9867890123",
+                email="pratiksha.magar@example.com",
+                address="Bhaktapur, Bagmati",
                 blood_group="B-",
-                allergies="None",
-                medical_notes="Postural kyphosis and thoracic spine stiffness from prolonged desk work. Scapular retractors conditioning.",
+                allergies="None reported",
+                medical_notes=(
+                    "Postural neck and upper-back stiffness associated with prolonged "
+                    "computer work. Following posture correction and strengthening program."
+                ),
                 assigned_therapist_id=therapists[2].id,
                 status="Completed",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=40),
             ),
             Patient(
-                first_name="Ethan",
-                last_name="Ross",
+                first_name="Ramesh",
+                last_name="Adhikari",
                 date_of_birth=date(1966, 10, 19),
                 gender="Male",
-                phone="+1 (555) 234-1008",
-                email="ethan.ross@example.com",
-                address="55 Juniper Loop, Riverdale",
+                phone="+977 9878901234",
+                email="ramesh.adhikari@example.com",
+                address="Chabahil, Kathmandu",
                 blood_group="O+",
                 allergies="Dust, Pollen",
-                medical_notes="Cervical radiculopathy with numbness radiating down left C6 dermatome. Gentle manual traction and postural coaching.",
+                medical_notes=(
+                    "Cervical radiculopathy with intermittent numbness in the left arm. "
+                    "Receiving gentle manual therapy, mobility exercises, and postural education."
+                ),
                 assigned_therapist_id=therapists[3].id,
                 status="Active",
                 is_active=True,
                 created_at=datetime.utcnow() - timedelta(days=5),
             ),
         ]
+
         session.add_all(patients)
         session.flush()
 
@@ -291,8 +346,11 @@ def seed() -> None:
                 start_time="09:00",
                 end_time="09:30",
                 status="Completed",
-                reason="ACL Rehab Session 4",
-                notes="Ref: PHY-829101. Excellent quadriceps activation today. Swelling subsided.",
+                reason="ACL Rehabilitation Session 4",
+                notes=(
+                    "Ref: PHY-NEP-829101. Good quadriceps activation. "
+                    "Patient reports reduced swelling and improved walking tolerance."
+                ),
                 created_by=admin.id,
                 is_deleted=False,
             ),
@@ -303,8 +361,11 @@ def seed() -> None:
                 start_time="10:00",
                 end_time="10:30",
                 status="Confirmed",
-                reason="Rotator cuff ultrasound & mobility",
-                notes="Ref: PHY-829102. Patient reports pain decreased from 7/10 to 3/10.",
+                reason="Shoulder Mobility & Rotator Cuff Rehabilitation",
+                notes=(
+                    "Ref: PHY-NEP-829102. Patient reports pain reduced "
+                    "from 7/10 to 3/10 after previous sessions."
+                ),
                 created_by=staff.id,
                 is_deleted=False,
             ),
@@ -315,8 +376,11 @@ def seed() -> None:
                 start_time="12:00",
                 end_time="13:00",
                 status="Scheduled",
-                reason="Knee post-op mobilization",
-                notes="Ref: PHY-829103. Focus on achieving 115 degree flexion target.",
+                reason="Post-operative Knee Rehabilitation",
+                notes=(
+                    "Ref: PHY-NEP-829103. Focus on knee flexion, "
+                    "quadriceps activation, and gait training."
+                ),
                 created_by=admin.id,
                 is_deleted=False,
             ),
@@ -327,11 +391,15 @@ def seed() -> None:
                 start_time="14:00",
                 end_time="14:45",
                 status="Confirmed",
-                reason="Ankle proprioception & taping",
-                notes="Ref: PHY-829104. Patient clearing for light jogging.",
+                reason="Ankle Proprioception & Rehabilitation",
+                notes=(
+                    "Ref: PHY-NEP-829104. Patient progressing well "
+                    "and preparing to return to recreational football."
+                ),
                 created_by=staff.id,
                 is_deleted=False,
             ),
+
             # Tomorrow's appointments
             Appointment(
                 patient_id=patients[7].id,
@@ -340,8 +408,11 @@ def seed() -> None:
                 start_time="13:00",
                 end_time="14:00",
                 status="Scheduled",
-                reason="Cervical traction follow-up",
-                notes="Ref: PHY-829105. Check dermatome sensation status.",
+                reason="Cervical Radiculopathy Follow-up",
+                notes=(
+                    "Ref: PHY-NEP-829105. Review arm symptoms, "
+                    "cervical mobility, and neurological signs."
+                ),
                 created_by=staff.id,
                 is_deleted=False,
             ),
@@ -352,12 +423,16 @@ def seed() -> None:
                 start_time="10:00",
                 end_time="10:30",
                 status="Scheduled",
-                reason="Strength progress assessment",
-                notes="Ref: PHY-829106. Biodex dynamometer testing.",
+                reason="ACL Strength Progress Assessment",
+                notes=(
+                    "Ref: PHY-NEP-829106. Assess lower-limb strength "
+                    "and progress rehabilitation exercises."
+                ),
                 created_by=admin.id,
                 is_deleted=False,
             ),
-            # Past appointments
+
+            # Past appointment
             Appointment(
                 patient_id=patients[1].id,
                 therapist_id=therapists[1].id,
@@ -365,12 +440,16 @@ def seed() -> None:
                 start_time="11:00",
                 end_time="11:45",
                 status="Completed",
-                reason="Final lumbar discharge evaluation",
-                notes="Ref: PHY-829100. Discharged with home maintenance routine.",
+                reason="Final Lower Back Rehabilitation Assessment",
+                notes=(
+                    "Ref: PHY-NEP-829100. Patient completed the rehabilitation "
+                    "program and was provided with a home exercise plan."
+                ),
                 created_by=admin.id,
                 is_deleted=False,
             ),
         ]
+
         session.add_all(appointments)
         session.flush()
 
@@ -381,66 +460,82 @@ def seed() -> None:
                 patient_id=patients[0].id,
                 appointment_id=appointments[0].id,
                 invoice_date=today,
-                subtotal=150.00,
-                discount=15.00,
-                tax=10.80,
-                total=145.80,
+                subtotal=1800.00,
+                discount=200.00,
+                tax=0.00,
+                total=1600.00,
                 status="Paid",
-                notes="Comprehensive sports rehab session with cryotherapy treatment.",
+                notes=(
+                    "Sports rehabilitation session including ACL exercises, "
+                    "manual therapy, and strengthening."
+                ),
             ),
             Invoice(
                 invoice_number="INV-20260925-1002",
                 patient_id=patients[2].id,
                 appointment_id=appointments[1].id,
                 invoice_date=today,
-                subtotal=180.00,
+                subtotal=1500.00,
                 discount=0.00,
-                tax=14.40,
-                total=194.40,
+                tax=0.00,
+                total=1500.00,
                 status="Due",
-                notes="Rotator cuff manual therapy and therapeutic therapeutic ultrasound.",
+                notes=(
+                    "Shoulder rehabilitation including manual therapy, "
+                    "mobility exercises, and therapeutic exercise."
+                ),
             ),
             Invoice(
                 invoice_number="INV-20260924-1003",
                 patient_id=patients[4].id,
                 appointment_id=None,
                 invoice_date=today - timedelta(days=1),
-                subtotal=220.00,
-                discount=20.00,
-                tax=16.00,
-                total=216.00,
+                subtotal=2200.00,
+                discount=200.00,
+                tax=0.00,
+                total=2000.00,
                 status="Paid",
-                notes="Post-surgical knee rehabilitation and neuromuscular stimulation.",
+                notes=(
+                    "Post-operative knee rehabilitation including mobility, "
+                    "strengthening, and gait training."
+                ),
             ),
             Invoice(
                 invoice_number="INV-20260922-1004",
                 patient_id=patients[1].id,
                 appointment_id=appointments[6].id,
                 invoice_date=today - timedelta(days=3),
-                subtotal=190.00,
-                discount=10.00,
-                tax=14.40,
-                total=194.40,
+                subtotal=1500.00,
+                discount=100.00,
+                tax=0.00,
+                total=1400.00,
                 status="Paid",
-                notes="Final clinical assessment, lumbar mobility testing and discharge pack.",
+                notes=(
+                    "Final clinical assessment, lumbar mobility work, "
+                    "and discharge exercise program."
+                ),
             ),
             Invoice(
                 invoice_number="INV-20260920-1005",
                 patient_id=patients[5].id,
                 appointment_id=None,
                 invoice_date=today - timedelta(days=5),
-                subtotal=140.00,
+                subtotal=1500.00,
                 discount=0.00,
-                tax=11.20,
-                total=151.20,
+                tax=0.00,
+                total=1500.00,
                 status="Due",
-                notes="Ankle biomechanical assessment and therapeutic taping supply.",
+                notes=(
+                    "Ankle rehabilitation assessment, proprioception training, "
+                    "and therapeutic taping."
+                ),
             ),
         ]
+
         session.add_all(invoices)
         session.commit()
 
-        print("Database successfully seeded with realistic production data!")
+        print("Database successfully seeded with realistic Nepal clinic data!")
 
 
 if __name__ == "__main__":
