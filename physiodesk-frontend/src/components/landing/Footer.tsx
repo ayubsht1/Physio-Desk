@@ -55,7 +55,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#b8763a] shrink-0" />
-                <span>+977 1-5532100 / +977 9851023450</span>
+                <span>+977 xxxxxx / +977 xxxxxxx</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#b8763a] shrink-0" />
@@ -99,7 +99,7 @@ export function Footer() {
         </div>
 
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#7d8885]">
-          <p>© {new Date().getFullYear()} Physio Desk Clinical Practice. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Physio Desk Clinical Practice. Ayub Shrestha All rights reserved.</p>
           <div className="flex items-center gap-6">
             <span>HIPAA Compliant Patient Intake</span>
             <span>Accredited Physical Therapy Facility</span>
