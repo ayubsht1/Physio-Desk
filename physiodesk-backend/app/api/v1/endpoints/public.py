@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.core.scheduling import DAY_NAMES, parse_time, validate_appointment_schedule, ensure_no_overlap
 from app.models.appointment import Appointment
 from app.models.patient import Patient
+from app.models.service import Service
 from app.models.therapist import Therapist
 
 router = APIRouter(prefix="/public", tags=["Public Portal"])
@@ -31,6 +32,7 @@ class PublicAppointmentRequest(BaseModel):
     patient_phone: str
     patient_email: str | None = None
     therapist_id: int
+    service_id: int | None = None
     appointment_date: date
     start_time: str
     reason: str | None = None
@@ -146,6 +148,17 @@ def request_public_appointment(payload: PublicAppointmentRequest, db: Session = 
     if not therapist:
         raise HTTPException(status_code=404, detail="Selected therapist is not found or unavailable")
 
+    if payload.service_id is not None:
+        service = db.query(Service).filter(
+            Service.id == payload.service_id,
+            Service.is_active == True,
+            Service.is_deleted == False,
+        ).first()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service not found or inactive")
+        if service not in therapist.services:
+            raise HTTPException(status_code=400, detail="Therapist does not offer this service")
+
     # Calculate end time based on slot duration
     start_dt = parse_time(payload.start_time)
     end_dt = start_dt + timedelta(minutes=therapist.slot_duration)
@@ -190,6 +203,7 @@ def request_public_appointment(payload: PublicAppointmentRequest, db: Session = 
     appointment = Appointment(
         patient_id=patient.id,
         therapist_id=therapist.id,
+        service_id=payload.service_id,
         appointment_date=payload.appointment_date,
         start_time=payload.start_time,
         end_time=end_time,

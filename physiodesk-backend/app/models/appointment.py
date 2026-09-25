@@ -23,6 +23,12 @@ class Appointment(Base):
         index=True,
     )
 
+    service_id: Mapped[int | None] = mapped_column(
+        ForeignKey("services.id"),
+        nullable=True,
+        index=True,
+    )
+
     appointment_date: Mapped[date] = mapped_column(
         Date,
         nullable=False,
@@ -73,6 +79,14 @@ class Appointment(Base):
     therapist: Mapped["Therapist"] = relationship(
         back_populates="appointments"
     )
+
+    service: Mapped["Service | None"] = relationship(
+        back_populates="appointments"
+    )
+
+    invoices: Mapped[list["Invoice"]] = relationship(
+        back_populates="appointment",
+    )
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -87,4 +101,4 @@ class Appointment(Base):
 
     @is_active.setter
     def is_active(self, value: bool) -> None:
-        self.is_deleted = not value
+        self.is_deleted = not value

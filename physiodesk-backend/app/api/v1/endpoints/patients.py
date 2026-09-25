@@ -72,7 +72,7 @@ def get_patient(
             "start_time": appointment.start_time,
             "end_time": appointment.end_time,
             "status": appointment.status,
-            "payment_method": appointment.payment_method,
+            "service_id": appointment.service_id,
             "notes": appointment.notes,
             "patient_name": f"{patient.first_name} {patient.last_name}",
             "therapist_name": appointment.therapist.name if appointment.therapist else None,
@@ -87,15 +87,19 @@ def get_patient(
     billing_history = [
         {
             "id": invoice.id,
+            "invoice_number": invoice.invoice_number,
             "patient_id": invoice.patient_id,
-            "service": invoice.service,
+            "appointment_id": invoice.appointment_id,
+            "service_id": invoice.service_id,
             "invoice_date": invoice.invoice_date,
-            "amount": float(invoice.amount),
+            "subtotal": float(invoice.subtotal),
+            "tax": float(invoice.tax),
+            "total": float(invoice.total),
             "status": invoice.status,
-            "payment_method": invoice.payment_method,
             "discount": float(invoice.discount),
             "notes": invoice.notes,
             "patient_name": f"{patient.first_name} {patient.last_name}",
+            "created_at": invoice.created_at,
         }
         for invoice in db.query(Invoice)
         .filter(Invoice.patient_id == patient.id)

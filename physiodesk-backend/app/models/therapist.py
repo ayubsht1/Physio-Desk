@@ -62,3 +62,8 @@ class Therapist(Base):
     consultations: Mapped[list["Consultation"]] = relationship(
         back_populates="therapist"
     )
+
+    services: Mapped[list["Service"]] = relationship(
+        secondary="therapist_services",
+        back_populates="therapists",
+    )

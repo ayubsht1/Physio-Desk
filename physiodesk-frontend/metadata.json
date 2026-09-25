@@ -1,0 +1,8 @@
+{
+  "name": "Physio Desk",
+  "description": "Physiotherapy clinic management dashboard demo",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

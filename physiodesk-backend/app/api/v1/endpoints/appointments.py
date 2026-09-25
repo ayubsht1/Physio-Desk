@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.scheduling import DAY_NAMES, ensure_no_overlap, parse_time, validate_appointment_schedule
-from app.core.security import get_current_user, require_roles
+from app.core.security import get_current_user, require_roles, get_current_user_optional
 from app.models.appointment import Appointment
 from app.models.patient import Patient
+from app.models.service import Service
 from app.models.therapist import Therapist
 from app.models.user import User
 from app.schemas import AppointmentCreate, AppointmentRead, AppointmentUpdate
@@ -20,6 +21,7 @@ def format_appointment(item: Appointment) -> dict:
         "id": item.id,
         "patient_id": item.patient_id,
         "therapist_id": item.therapist_id,
+        "service_id": item.service_id,
         "appointment_date": item.appointment_date,
         "start_time": item.start_time,
         "end_time": item.end_time,
@@ -39,7 +41,7 @@ def list_appointments(
     therapist_id: int | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     query = db.query(Appointment).filter(Appointment.is_deleted == False)
 
@@ -112,25 +114,63 @@ def get_available_slots(
 def create_appointment(
     payload: AppointmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     therapist = db.query(Therapist).filter(Therapist.id == payload.therapist_id).first()
+
     if not patient or not therapist:
-        raise HTTPException(status_code=400, detail="Patient or therapist not found")
+        raise HTTPException(
+            status_code=400,
+            detail="Patient or therapist not found",
+        )
+
     if not therapist.is_active:
-        raise HTTPException(status_code=400, detail="Therapist is inactive")
+        raise HTTPException(
+            status_code=400,
+            detail="Therapist is inactive",
+        )
 
-    validate_appointment_schedule(therapist, payload.appointment_date, payload.start_time, payload.end_time)
+    if payload.service_id is not None:
+        service = db.query(Service).filter(
+            Service.id == payload.service_id,
+            Service.is_active == True,
+            Service.is_deleted == False,
+        ).first()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service not found or inactive")
+        if service not in therapist.services:
+            raise HTTPException(status_code=400, detail="Therapist does not offer this service")
 
-    active_appointments_query = db.query(Appointment).filter(Appointment.is_deleted == False)
-    ensure_no_overlap(active_appointments_query, payload.therapist_id, payload.appointment_date, payload.start_time, payload.end_time)
+    validate_appointment_schedule(
+        therapist,
+        payload.appointment_date,
+        payload.start_time,
+        payload.end_time,
+    )
+
+    active_appointments_query = db.query(Appointment).filter(
+        Appointment.is_deleted == False
+    )
+
+    ensure_no_overlap(
+        active_appointments_query,
+        payload.therapist_id,
+        payload.appointment_date,
+        payload.start_time,
+        payload.end_time,
+    )
 
     data = payload.model_dump()
-    data["created_by"] = current_user.id
+
+    # Only associate the appointment with a user when authenticated
+    if current_user:
+        data["created_by"] = current_user.id
+
     data["is_deleted"] = False
 
     item = Appointment(**data)
+
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -159,6 +199,17 @@ def update_appointment(
     therapist = db.query(Therapist).filter(Therapist.id == target_therapist_id).first()
     if not patient or not therapist:
         raise HTTPException(status_code=400, detail="Patient or therapist not found")
+
+    if payload.service_id is not None:
+        service = db.query(Service).filter(
+            Service.id == payload.service_id,
+            Service.is_active == True,
+            Service.is_deleted == False,
+        ).first()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service not found or inactive")
+        if service not in therapist.services:
+            raise HTTPException(status_code=400, detail="Therapist does not offer this service")
 
     status_val = payload.status if payload.status is not None else appointment.status
     if not therapist.is_active and status_val != "Cancelled":

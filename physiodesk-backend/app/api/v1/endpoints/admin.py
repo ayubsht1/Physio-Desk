@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_password_hash, require_roles
 from app.models.patient import Patient
+from app.models.service import Service
 from app.models.appointment import Appointment
 from app.models.therapist import Therapist
 from app.models.user import User
@@ -302,6 +303,17 @@ def admin_create_appointment(
     if not patient or not therapist:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient or therapist not found")
 
+    if payload.service_id is not None:
+        service = db.query(Service).filter(
+            Service.id == payload.service_id,
+            Service.is_active == True,
+            Service.is_deleted == False,
+        ).first()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service not found or inactive")
+        if service not in therapist.services:
+            raise HTTPException(status_code=400, detail="Therapist does not offer this service")
+
     data = payload.model_dump()
     data["created_by"] = current_admin.id
     data["is_deleted"] = False
@@ -315,6 +327,7 @@ def admin_create_appointment(
         "id": appointment.id,
         "patient_id": appointment.patient_id,
         "therapist_id": appointment.therapist_id,
+        "service_id": appointment.service_id,
         "appointment_date": appointment.appointment_date,
         "start_time": appointment.start_time,
         "end_time": appointment.end_time,

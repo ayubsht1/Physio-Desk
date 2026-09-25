@@ -6,6 +6,7 @@ from app.models.payment import Payment
 from app.models.prescription import Prescription, PrescriptionItem
 from app.models.therapist import Therapist
 from app.models.user import User
+from app.models.service import Service
 
 __all__ = [
     "User",
@@ -17,4 +18,5 @@ __all__ = [
     "Consultation",
     "Prescription",
     "PrescriptionItem",
+    "Service",
 ]

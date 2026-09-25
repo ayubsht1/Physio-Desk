@@ -29,6 +29,12 @@ class Invoice(Base):
         nullable=True,
     )
 
+    service_id: Mapped[int | None] = mapped_column(
+        ForeignKey("services.id"),
+        nullable=True,
+        index=True,
+    )
+
     invoice_date: Mapped[date] = mapped_column(
         Date,
         nullable=False,
@@ -77,7 +83,15 @@ class Invoice(Base):
         back_populates="invoices"
     )
 
+    appointment: Mapped["Appointment | None"] = relationship(
+        back_populates="invoices"
+    )
+
     payments: Mapped[list["Payment"]] = relationship(
         back_populates="invoice",
         cascade="all, delete-orphan",
+    )
+
+    service: Mapped["Service | None"] = relationship(
+        back_populates="invoices"
     )

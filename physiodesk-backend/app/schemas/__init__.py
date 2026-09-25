@@ -174,6 +174,28 @@ class PatientRead(PatientCreate):
 
     model_config = ConfigDict(from_attributes=True)
 
+class ServiceCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=150)
+    description: str | None = None
+    duration: int = Field(..., gt=0)
+    price: float = Field(..., ge=0)
+    is_active: bool = True
+
+class ServiceUpdate(BaseModel):
+    name: str | None = Field(None, min_length=2, max_length=150)
+    description: str | None = None
+    duration: int | None = Field(None, gt=0)
+    price: float | None = Field(None, ge=0)
+    is_active: bool | None = None
+
+class ServiceRead(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    duration: int
+    price: float
+    is_active: bool
+    created_at: datetime
 
 class TherapistCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
@@ -190,6 +212,7 @@ class TherapistCreate(BaseModel):
     end_time: str = "17:00"
 
     slot_duration: int = 30
+    service_ids: list[int] = Field(default_factory=list)
 
     is_active: bool = True
     notes: str | None = None
@@ -265,9 +288,8 @@ class TherapistRead(TherapistCreate):
 class AppointmentCreate(BaseModel):
     patient_id: int
     therapist_id: int
-
+    service_id: int | None = None
     appointment_date: date
-
     start_time: str
     end_time: str
 
@@ -317,6 +339,7 @@ class AppointmentCreate(BaseModel):
 class AppointmentUpdate(BaseModel):
     patient_id: int | None = None
     therapist_id: int | None = None
+    service_id: int | None = None
     appointment_date: date | None = None
     start_time: str | None = None
     end_time: str | None = None
@@ -350,6 +373,7 @@ class AppointmentRead(BaseModel):
 
     patient_id: int
     therapist_id: int
+    service_id: int | None = None
 
     appointment_date: date
 
@@ -371,6 +395,7 @@ class AppointmentRead(BaseModel):
 class InvoiceCreate(BaseModel):
     patient_id: int
     appointment_id: int | None = None
+    service_id: int | None = None
     invoice_number: str | None = None
     invoice_date: date
     subtotal: float
@@ -391,6 +416,7 @@ class InvoiceCreate(BaseModel):
 class InvoiceUpdate(BaseModel):
     patient_id: int | None = None
     appointment_id: int | None = None
+    service_id: int | None = None
     invoice_date: date | None = None
     subtotal: float | None = None
     discount: float | None = None
@@ -405,6 +431,7 @@ class InvoiceRead(BaseModel):
     invoice_number: str
     patient_id: int
     appointment_id: int | None = None
+    service_id: int | None = None
     invoice_date: date
     subtotal: float
     discount: float = 0.0
@@ -413,6 +440,7 @@ class InvoiceRead(BaseModel):
     status: str
     notes: str | None = None
     patient_name: str | None = None
+    service_name: str | None = None
     created_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -429,8 +457,6 @@ class DashboardStats(BaseModel):
     cancelled_count: int = 0
     recent_patients: list[PatientRead] = Field(default_factory=list)
     therapist_capacity: list[dict] = Field(default_factory=list)
-
-
 
 class PatientDetail(BaseModel):
     patient: PatientRead

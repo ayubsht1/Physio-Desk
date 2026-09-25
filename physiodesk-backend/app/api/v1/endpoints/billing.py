@@ -8,6 +8,8 @@ from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.invoice import Invoice
 from app.models.patient import Patient
+from app.models.appointment import Appointment
+from app.models.service import Service
 from app.models.user import User
 from app.schemas import InvoiceCreate, InvoiceRead, InvoiceUpdate
 
@@ -30,6 +32,7 @@ def format_invoice(invoice: Invoice) -> dict:
         "invoice_number": invoice.invoice_number,
         "patient_id": invoice.patient_id,
         "appointment_id": invoice.appointment_id,
+        "service_id": invoice.service_id,
         "invoice_date": invoice.invoice_date,
         "subtotal": float(invoice.subtotal),
         "discount": float(invoice.discount),
@@ -38,6 +41,7 @@ def format_invoice(invoice: Invoice) -> dict:
         "status": invoice.status,
         "notes": invoice.notes,
         "patient_name": invoice.patient.name if invoice.patient else None,
+        "service_name": invoice.service.name if invoice.service else None,
         "created_at": invoice.created_at,
     }
 
@@ -64,6 +68,19 @@ def create_invoice(
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     if not patient:
         raise HTTPException(status_code=400, detail="Patient not found")
+
+    if payload.appointment_id is not None:
+        appointment = db.query(Appointment).filter(Appointment.id == payload.appointment_id).first()
+        if not appointment or appointment.patient_id != payload.patient_id:
+            raise HTTPException(status_code=400, detail="Appointment does not belong to patient")
+
+    if payload.service_id is not None:
+        service = db.query(Service).filter(
+            Service.id == payload.service_id,
+            Service.is_deleted == False,
+        ).first()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service not found")
 
     data = payload.model_dump()
     if not data.get("invoice_number"):
@@ -97,6 +114,19 @@ def update_invoice(
         patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
         if not patient:
             raise HTTPException(status_code=400, detail="Patient not found")
+
+    if payload.appointment_id is not None:
+        appointment = db.query(Appointment).filter(Appointment.id == payload.appointment_id).first()
+        if not appointment or appointment.patient_id != (payload.patient_id or invoice.patient_id):
+            raise HTTPException(status_code=400, detail="Appointment does not belong to patient")
+
+    if payload.service_id is not None:
+        service = db.query(Service).filter(
+            Service.id == payload.service_id,
+            Service.is_deleted == False,
+        ).first()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service not found")
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():

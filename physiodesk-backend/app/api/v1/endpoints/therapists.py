@@ -4,17 +4,32 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.therapist import Therapist
+from app.models.service import Service
 from app.models.user import User
 from app.schemas import TherapistCreate, TherapistRead
 
 router = APIRouter(prefix="/therapists", tags=["Therapists"])
 
 
+def set_therapist_services(therapist: Therapist, service_ids: list[int], db: Session) -> None:
+    if not service_ids:
+        therapist.services = []
+        return
+    services = db.query(Service).filter(
+        Service.id.in_(service_ids),
+        Service.is_active == True,
+        Service.is_deleted == False,
+    ).all()
+    if len(services) != len(set(service_ids)):
+        raise HTTPException(status_code=400, detail="One or more services were not found or are inactive")
+    therapist.services = services
+
+
 @router.get("", response_model=list[TherapistRead])
 def list_therapists(
     include_inactive: bool = Query(default=True, description="Filter to include or exclude deactivated therapists"),
     db: Session = Depends(get_db), 
-    current_user: User = Depends(get_current_user)
+    # current_user: User = Depends(get_current_user)
 ):
     """
     List all therapists. Admins or staff can view active or all (including inactive) therapists.
@@ -39,6 +54,7 @@ def list_therapists(
             "slot_duration": t.slot_duration,
             "is_active": t.is_active,
             "notes": t.notes,
+            "service_ids": [service.id for service in t.services],
         }
         for t in therapists
     ]
@@ -50,7 +66,9 @@ def create_therapist(
     db: Session = Depends(get_db), 
     current_user: User = Depends(require_roles("admin"))
 ):
-    therapist = Therapist(**payload.model_dump())
+    therapist = Therapist(**payload.model_dump(exclude={"service_ids"}))
+    service_ids = payload.service_ids
+    set_therapist_services(therapist, service_ids, db)
     db.add(therapist)
     db.commit()
     db.refresh(therapist)
@@ -68,6 +86,7 @@ def create_therapist(
         "slot_duration": therapist.slot_duration,
         "is_active": therapist.is_active,
         "notes": therapist.notes,
+        "service_ids": [service.id for service in therapist.services],
     }
 
 
@@ -82,8 +101,10 @@ def update_therapist(
     if not therapist:
         raise HTTPException(status_code=404, detail="Therapist not found")
 
-    for field, value in payload.model_dump().items():
+    update_data = payload.model_dump(exclude={"service_ids"})
+    for field, value in update_data.items():
         setattr(therapist, field, value)
+    set_therapist_services(therapist, payload.service_ids, db)
 
     db.commit()
     db.refresh(therapist)
@@ -101,6 +122,7 @@ def update_therapist(
         "slot_duration": therapist.slot_duration,
         "is_active": therapist.is_active,
         "notes": therapist.notes,
+        "service_ids": [service.id for service in therapist.services],
     }
 
 
@@ -136,4 +158,5 @@ def toggle_therapist_status(
         "slot_duration": therapist.slot_duration,
         "is_active": therapist.is_active,
         "notes": therapist.notes,
+        "service_ids": [service.id for service in therapist.services],
     }
