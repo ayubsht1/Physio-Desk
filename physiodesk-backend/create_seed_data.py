@@ -9,8 +9,15 @@ from app.core.config import settings
 from app.models import Appointment, Invoice, Patient, Service, Therapist, User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-engine = create_engine(settings.database_url)
+connect_args = {}
 
+if settings.database_url.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
+engine = create_engine(
+    settings.database_url,
+    connect_args=connect_args,
+)
 
 def seed() -> None:
     with Session(engine) as session:

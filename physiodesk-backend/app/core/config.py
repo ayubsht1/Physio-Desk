@@ -5,7 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
 	app_name: str = "Physio Desk API"
-	database_url: str = "postgresql+psycopg2://physio:physio@localhost:5432/physio_desk"
+	# database_url: str = "postgresql+psycopg2://physio:physio@localhost:5432/physio_desk"
+	database_url: str = "sqlite:///./physiodesk.db"
 	cors_origins: str = "http://localhost:3000"
 	jwt_secret_key: str
 	jwt_algorithm: str = "HS256"
