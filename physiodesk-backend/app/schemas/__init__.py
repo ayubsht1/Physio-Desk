@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (BaseModel, Field, field_validator, model_validator,ConfigDict, EmailStr)
 
 
 class TokenPayload(BaseModel):
@@ -12,86 +12,181 @@ class TokenPayload(BaseModel):
     token_type: str = "bearer"
 
 
-class UserBase(BaseModel):
-    username: str
-    email: str
-    full_name: str
-    role: str = "staff"
-
-
 class UserCreate(BaseModel):
-    username: str
-    email: str
-    full_name: str
-    password: str
+    username: str = Field(
+        min_length=3,
+        max_length=80,
+    )
+
+    email: EmailStr
+
+    first_name: str = Field(
+        min_length=1,
+        max_length=80,
+    )
+
+    middle_name: str | None = Field(
+        default=None,
+        max_length=80,
+    )
+
+    last_name: str = Field(
+        min_length=1,
+        max_length=80,
+    )
+
+    password: str = Field(
+        min_length=8,
+        max_length=128,
+    )
+
     role: Literal["admin", "staff"] = "staff"
 
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str) -> str:
+        value = value.strip()
 
-class UserPublic(UserBase):
+        if " " in value:
+            raise ValueError("Username cannot contain spaces")
+
+        return value.lower()
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def validate_required_names(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("First and last names cannot be empty")
+        return value.strip()
+
+    @field_validator("middle_name")
+    @classmethod
+    def validate_middle_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        
+        value = value.strip()
+        # Converts blank or empty strings ("") to None automatically
+        return value if value else None
+
+class UserUpdate(BaseModel):
+    first_name: str | None = Field(default=None, min_length=1, max_length=80)
+    middle_name: str | None = Field(default=None, max_length=80)
+    last_name: str | None = Field(default=None, min_length=1, max_length=80)
+    email: EmailStr | None = None
+    role: Literal["admin", "staff"] | None = None
+    is_active: bool | None = None
+    notes: str | None = None
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def validate_optional_names(cls, value: str | None) -> str | None:
+        if value is not None:
+            if not value.strip():
+                raise ValueError("Names cannot be empty")
+            return value.strip()
+        return value
+
+    @field_validator("middle_name")
+    @classmethod
+    def validate_middle_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        return value if value else None
+
+
+class AdminPasswordReset(BaseModel):
+    new_password: str = Field(
+        min_length=8,
+        max_length=128,
+    )
+
+
+class UserPasswordChange(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(
+        min_length=8,
+        max_length=128,
+    )
+    
+class UserPublic(BaseModel):
     id: int
+    username: str
+    email: EmailStr
+    first_name: str
+    middle_name: str | None = None
+    last_name: str
+    role: str
+    is_active: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str = Field(min_length=1)
 
 
 class PatientCreate(BaseModel):
-    name: str
-    phone: str
-    age: int
-    gender: str
-    address: str
-    condition: str
+    first_name: str = Field(min_length=1, max_length=80)
+    last_name: str = Field(min_length=1, max_length=80)
+    date_of_birth: date | None = None
+    gender: str = Field(min_length=1, max_length=30)
+    phone: str = Field(min_length=7, max_length=20)
+    email: str | None = None
+    address: str | None = None
+    blood_group: str | None = Field(default=None, max_length=10)
+    allergies: str | None = None
+    medical_notes: str | None = None
     assigned_therapist_id: int | None = None
-    package: str
     status: Literal["Active", "Completed", "On hold"] = "Active"
-    created_at: date | None = None
-
-    @field_validator("age")
-    @classmethod
-    def validate_age(cls, value: int) -> int:
-        if not 0 <= value <= 130:
-            raise ValueError("Age must be between 0 and 130")
-        return value
-
+    is_active: bool = True
 
 class PatientUpdate(BaseModel):
-    name: str | None = None
-    phone: str | None = None
-    age: int | None = None
+    first_name: str | None = Field(default=None, min_length=1, max_length=80)
+    last_name: str | None = Field(default=None, min_length=1, max_length=80)
+    date_of_birth: date | None = None
     gender: str | None = None
+    phone: str | None = None
+    email: str | None = None
     address: str | None = None
-    condition: str | None = None
+    blood_group: str | None = None
+    allergies: str | None = None
+    medical_notes: str | None = None
     assigned_therapist_id: int | None = None
-    package: str | None = None
     status: Literal["Active", "Completed", "On hold"] | None = None
-    created_at: date | None = None
-
-    @field_validator("age")
-    @classmethod
-    def validate_age(cls, value: int | None) -> int | None:
-        if value is not None and not 0 <= value <= 130:
-            raise ValueError("Age must be between 0 and 130")
-        return value
-
+    is_active: bool | None = None
 
 class PatientRead(PatientCreate):
     id: int
     therapist_name: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TherapistCreate(BaseModel):
-    name: str
-    specialty: str
+    name: str = Field(min_length=1, max_length=120)
+    specialty: str = Field(min_length=1, max_length=120)
+
+    license_number: str | None = None
+
+    phone: str | None = None
+    email: str | None = None
+
     working_days: str = "Mon,Tue,Wed,Thu,Fri"
+
     start_time: str = "09:00"
     end_time: str = "17:00"
+
     slot_duration: int = 30
+
     is_active: bool = True
     notes: str | None = None
 
@@ -99,56 +194,168 @@ class TherapistCreate(BaseModel):
     @classmethod
     def validate_slot_duration(cls, value: int) -> int:
         if value <= 0:
-            raise ValueError("Slot duration must be greater than zero")
+            raise ValueError(
+                "Slot duration must be greater than zero"
+            )
+
+        if value > 480:
+            raise ValueError(
+                "Slot duration cannot exceed 8 hours"
+            )
+
+        return value
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_time(cls, value: str) -> str:
+        try:
+            datetime.strptime(value, "%H:%M")
+        except ValueError as exc:
+            raise ValueError(
+                "Time must use HH:MM format"
+            ) from exc
+
         return value
 
     @model_validator(mode="after")
     def validate_working_hours(self):
-        from datetime import datetime
+        start = datetime.strptime(
+            self.start_time,
+            "%H:%M",
+        )
 
-        try:
-            start = datetime.strptime(self.start_time, "%H:%M")
-            end = datetime.strptime(self.end_time, "%H:%M")
-        except ValueError as exc:
-            raise ValueError("Working hours must use HH:MM format") from exc
+        end = datetime.strptime(
+            self.end_time,
+            "%H:%M",
+        )
+
         if start >= end:
-            raise ValueError("End time must be after start time")
+            raise ValueError(
+                "End time must be after start time"
+            )
+
         return self
 
+class TherapistUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    specialty: str | None = Field(default=None, min_length=1, max_length=120)
+    license_number: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    working_days: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    slot_duration: int | None = None
+    is_active: bool | None = None
+    notes: str | None = None
 
+    # (Keep your existing validators, or apply them optionally if fields are provided)
+    
 class TherapistRead(TherapistCreate):
     id: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AppointmentCreate(BaseModel):
     patient_id: int
     therapist_id: int
+
     appointment_date: date
+
     start_time: str
     end_time: str
-    payment_method: str | None = None
+
+    reason: str | None = None
     notes: str | None = None
-    status: Literal["Booked", "Completed", "Cancelled", "No-show"] = "Booked"
+
+    status: Literal[
+        "Scheduled",
+        "Confirmed",
+        "Completed",
+        "Cancelled",
+        "No-show",
+    ] = "Scheduled"
 
     @field_validator("start_time", "end_time")
     @classmethod
     def validate_time(cls, value: str) -> str:
-        from datetime import datetime
-
         try:
-            if len(value) != 5 or value[2] != ":":
-                raise ValueError
+            datetime.strptime(value, "%H:%M")
+        except ValueError as exc:
+            raise ValueError(
+                "Time must use HH:MM format"
+            ) from exc
+
+        return value
+
+    @model_validator(mode="after")
+    def validate_time_range(self):
+        start = datetime.strptime(
+            self.start_time,
+            "%H:%M",
+        )
+
+        end = datetime.strptime(
+            self.end_time,
+            "%H:%M",
+        )
+
+        if start >= end:
+            raise ValueError(
+                "End time must be after start time"
+            )
+
+        return self
+
+class AppointmentUpdate(BaseModel):
+    patient_id: int | None = None
+    therapist_id: int | None = None
+    appointment_date: date | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    reason: str | None = None
+    notes: str | None = None
+    status: Literal[
+        "Scheduled",
+        "Confirmed",
+        "Completed",
+        "Cancelled",
+        "No-show",
+    ] | None = None
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_time(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        try:
             datetime.strptime(value, "%H:%M")
         except ValueError as exc:
             raise ValueError("Time must use HH:MM format") from exc
         return value
 
-
-class AppointmentRead(AppointmentCreate):
+class AppointmentRead(BaseModel):
     id: int
+
+    patient_id: int
+    therapist_id: int
+
+    appointment_date: date
+
+    start_time: str
+    end_time: str
+
+    reason: str | None = None
+    notes: str | None = None
+
+    status: str
+
     patient_name: str | None = None
     therapist_name: str | None = None
-    created_at: datetime | None = None
+
+    created_by: int | None = None
+    created_at: datetime
 
 
 class InvoiceCreate(BaseModel):

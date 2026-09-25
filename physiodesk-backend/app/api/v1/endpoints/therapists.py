@@ -4,43 +4,64 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.therapist import Therapist
-from app.models.appointment import Appointment
-from app.models.patient import Patient
 from app.models.user import User
 from app.schemas import TherapistCreate, TherapistRead
 
-router = APIRouter(prefix="/therapists")
+router = APIRouter(prefix="/therapists", tags=["Therapists"])
 
 
 @router.get("", response_model=list[TherapistRead])
-def list_therapists(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    therapists = db.query(Therapist).order_by(Therapist.id.asc()).all()
+def list_therapists(
+    include_inactive: bool = Query(default=True, description="Filter to include or exclude deactivated therapists"),
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """
+    List all therapists. Admins or staff can view active or all (including inactive) therapists.
+    """
+    query = db.query(Therapist)
+    if not include_inactive:
+        query = query.filter(Therapist.is_active == True)
+
+    therapists = query.order_by(Therapist.id.asc()).all()
+    
     return [
         {
-            "id": therapist.id,
-            "name": therapist.name,
-            "specialty": therapist.specialty,
-            "working_days": therapist.working_days,
-            "start_time": therapist.start_time,
-            "end_time": therapist.end_time,
-            "slot_duration": therapist.slot_duration,
-            "is_active": therapist.is_active,
-            "notes": therapist.notes,
+            "id": t.id,
+            "name": t.name,
+            "specialty": t.specialty,
+            "license_number": t.license_number,
+            "phone": t.phone,
+            "email": t.email,
+            "working_days": t.working_days,
+            "start_time": t.start_time,
+            "end_time": t.end_time,
+            "slot_duration": t.slot_duration,
+            "is_active": t.is_active,
+            "notes": t.notes,
         }
-        for therapist in therapists
+        for t in therapists
     ]
 
 
 @router.post("", response_model=TherapistRead, status_code=status.HTTP_201_CREATED)
-def create_therapist(payload: TherapistCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))):
+def create_therapist(
+    payload: TherapistCreate, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(require_roles("admin"))
+):
     therapist = Therapist(**payload.model_dump())
     db.add(therapist)
     db.commit()
     db.refresh(therapist)
+    
     return {
         "id": therapist.id,
         "name": therapist.name,
         "specialty": therapist.specialty,
+        "license_number": therapist.license_number,
+        "phone": therapist.phone,
+        "email": therapist.email,
         "working_days": therapist.working_days,
         "start_time": therapist.start_time,
         "end_time": therapist.end_time,
@@ -51,18 +72,29 @@ def create_therapist(payload: TherapistCreate, db: Session = Depends(get_db), cu
 
 
 @router.put("/{therapist_id}", response_model=TherapistRead)
-def update_therapist(therapist_id: int, payload: TherapistCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))):
+def update_therapist(
+    therapist_id: int, 
+    payload: TherapistCreate, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(require_roles("admin"))
+):
     therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
     if not therapist:
         raise HTTPException(status_code=404, detail="Therapist not found")
+
     for field, value in payload.model_dump().items():
         setattr(therapist, field, value)
+
     db.commit()
     db.refresh(therapist)
+    
     return {
         "id": therapist.id,
         "name": therapist.name,
         "specialty": therapist.specialty,
+        "license_number": therapist.license_number,
+        "phone": therapist.phone,
+        "email": therapist.email,
         "working_days": therapist.working_days,
         "start_time": therapist.start_time,
         "end_time": therapist.end_time,
@@ -72,13 +104,36 @@ def update_therapist(therapist_id: int, payload: TherapistCreate, db: Session = 
     }
 
 
-@router.delete("/{therapist_id}")
-def delete_therapist(therapist_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))):
+@router.patch("/{therapist_id}/status", response_model=TherapistRead)
+def toggle_therapist_status(
+    therapist_id: int, 
+    is_active: bool = Query(..., description="Set active status to true or false"),
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(require_roles("admin"))
+):
+    """
+    Soft-delete or reactivate a therapist by updating their is_active flag.
+    Preserves all historical appointments, patient relations, and consultation notes.
+    """
     therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
     if not therapist:
         raise HTTPException(status_code=404, detail="Therapist not found")
-    if db.query(Appointment).filter(Appointment.therapist_id == therapist.id).first() or db.query(Patient).filter(Patient.assigned_therapist_id == therapist.id).first():
-        raise HTTPException(status_code=409, detail="Therapist has related records and cannot be deleted")
-    db.delete(therapist)
+
+    therapist.is_active = is_active
     db.commit()
-    return {"message": "Therapist removed"}
+    db.refresh(therapist)
+
+    return {
+        "id": therapist.id,
+        "name": therapist.name,
+        "specialty": therapist.specialty,
+        "license_number": therapist.license_number,
+        "phone": therapist.phone,
+        "email": therapist.email,
+        "working_days": therapist.working_days,
+        "start_time": therapist.start_time,
+        "end_time": therapist.end_time,
+        "slot_duration": therapist.slot_duration,
+        "is_active": therapist.is_active,
+        "notes": therapist.notes,
+    }

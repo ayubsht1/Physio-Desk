@@ -7,7 +7,7 @@ Physio Desk is a physiotherapy clinic operations demo built with a FastAPI backe
 - Admin users can access billing and therapist management; staff users can read and work with patient and scheduling data but are restricted from admin-only management.
 - A single therapist slot is treated as a 30/45/60-minute time block depending on the therapist schedule; double-booking is prevented at the API layer.
 - Appointments created in the demo use an in-memory check against the same therapist/date/start time combination, rather than a complex recurring schedule engine.
-- The frontend is a design-focused demo that matches the requested palette, fonts, and dashboard conventions while calling the API layer for seeded state.
+- The frontend is an API-connected Next.js workspace that loads live dashboard data and provides patient, appointment, invoice, and admin therapist workflows.
 
 ## Stack
 
@@ -139,11 +139,11 @@ python -m alembic upgrade head
 ## Notes
 
 - The design language follows the palette and type system described in the brief: Fraunces for headings, Inter for UI, IBM Plex Mono for data points.
-- The dashboard is a visually aligned demo and intentionally focuses on the key clinic operating views rather than a full enterprise complexity.
+- The dashboard follows the requested visual system and keeps the primary clinic workflows in one responsive workspace.
 
 ## What I would improve with more time
 
-- Expand the frontend to fully interactive patient, scheduling, invoice, and therapist CRUD screens with real API-driven forms.
+- Add patient detail views with session and billing history, plus edit/void actions for all existing records.
 - Add refresh-token rotation and stronger auth session handling.
 - Build richer schedule validation, availability widgets, and a real-day calendar grid.
 - Add integration tests for auth, appointment booking conflict prevention, and billing logic.

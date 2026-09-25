@@ -10,96 +10,103 @@ from app.models.therapist import Therapist
 from app.models.user import User
 from app.schemas import PatientCreate, PatientDetail, PatientRead, PatientUpdate
 
-router = APIRouter(prefix="/patients")
+router = APIRouter(prefix="/patients", tags=["Patients"])
 
 
 @router.get("", response_model=list[PatientRead])
 def list_patients(
     search: str | None = Query(default=None),
     therapist_id: int | None = Query(default=None),
-    status: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    include_inactive: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     query = db.query(Patient)
+
+    # Hide inactive/soft-deleted patients by default
+    if not include_inactive:
+        query = query.filter(Patient.is_active == True)
+
     if search:
-        query = query.filter((Patient.name.ilike(f"%{search}%")) | (Patient.phone.ilike(f"%{search}%")))
+        query = query.filter(
+            (Patient.first_name.ilike(f"%{search}%"))
+            | (Patient.last_name.ilike(f"%{search}%"))
+            | (Patient.phone.ilike(f"%{search}%"))
+        )
     if therapist_id:
         query = query.filter(Patient.assigned_therapist_id == therapist_id)
-    if status:
-        query = query.filter(Patient.status == status)
+    if status_filter:
+        query = query.filter(Patient.status == status_filter)
+
     patients = query.order_by(Patient.id.desc()).all()
-    return [
-        {
-            "id": patient.id,
-            "name": patient.name,
-            "phone": patient.phone,
-            "age": patient.age,
-            "gender": patient.gender,
-            "address": patient.address,
-            "condition": patient.condition,
-            "assigned_therapist_id": patient.assigned_therapist_id,
-            "package": patient.package,
-            "status": patient.status,
-            "created_at": patient.created_at,
-            "therapist_name": patient.therapist.name if patient.therapist else None,
-        }
-        for patient in patients
-    ]
+    
+    results = []
+    for patient in patients:
+        patient_data = PatientRead.model_validate(patient)
+        patient_data.therapist_name = patient.therapist.name if patient.therapist else None
+        results.append(patient_data)
+
+    return results
 
 
 @router.get("/{patient_id}", response_model=PatientDetail)
-def get_patient(patient_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_patient(
+    patient_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    patient_read = PatientRead.model_validate(patient)
+    patient_read.therapist_name = patient.therapist.name if patient.therapist else None
+
+    session_history = [
+        {
+            "id": appointment.id,
+            "patient_id": appointment.patient_id,
+            "therapist_id": appointment.therapist_id,
+            "appointment_date": appointment.appointment_date,
+            "start_time": appointment.start_time,
+            "end_time": appointment.end_time,
+            "status": appointment.status,
+            "payment_method": appointment.payment_method,
+            "notes": appointment.notes,
+            "patient_name": f"{patient.first_name} {patient.last_name}",
+            "therapist_name": appointment.therapist.name if appointment.therapist else None,
+            "created_at": appointment.created_at,
+        }
+        for appointment in db.query(Appointment)
+        .filter(Appointment.patient_id == patient.id)
+        .order_by(Appointment.appointment_date.desc(), Appointment.start_time.desc())
+        .all()
+    ]
+
+    billing_history = [
+        {
+            "id": invoice.id,
+            "patient_id": invoice.patient_id,
+            "service": invoice.service,
+            "invoice_date": invoice.invoice_date,
+            "amount": float(invoice.amount),
+            "status": invoice.status,
+            "payment_method": invoice.payment_method,
+            "discount": float(invoice.discount),
+            "notes": invoice.notes,
+            "patient_name": f"{patient.first_name} {patient.last_name}",
+        }
+        for invoice in db.query(Invoice)
+        .filter(Invoice.patient_id == patient.id)
+        .order_by(Invoice.invoice_date.desc())
+        .all()
+    ]
+
     return {
-        "patient": {
-            "id": patient.id,
-            "name": patient.name,
-            "phone": patient.phone,
-            "age": patient.age,
-            "gender": patient.gender,
-            "address": patient.address,
-            "condition": patient.condition,
-            "assigned_therapist_id": patient.assigned_therapist_id,
-            "package": patient.package,
-            "status": patient.status,
-            "created_at": patient.created_at,
-            "therapist_name": patient.therapist.name if patient.therapist else None,
-        },
-        "session_history": [
-            {
-                "id": appointment.id,
-                "patient_id": appointment.patient_id,
-                "therapist_id": appointment.therapist_id,
-                "appointment_date": appointment.appointment_date,
-                "start_time": appointment.start_time,
-                "end_time": appointment.end_time,
-                "status": appointment.status,
-                "payment_method": appointment.payment_method,
-                "notes": appointment.notes,
-                "patient_name": patient.name,
-                "therapist_name": appointment.therapist.name,
-                "created_at": appointment.created_at,
-            }
-            for appointment in db.query(Appointment).filter(Appointment.patient_id == patient.id).order_by(Appointment.appointment_date.desc(), Appointment.start_time.desc()).all()
-        ],
-        "billing_history": [
-            {
-                "id": invoice.id,
-                "patient_id": invoice.patient_id,
-                "service": invoice.service,
-                "invoice_date": invoice.invoice_date,
-                "amount": float(invoice.amount),
-                "status": invoice.status,
-                "payment_method": invoice.payment_method,
-                "discount": float(invoice.discount),
-                "notes": invoice.notes,
-                "patient_name": patient.name,
-            }
-            for invoice in db.query(Invoice).filter(Invoice.patient_id == patient.id).order_by(Invoice.invoice_date.desc()).all()
-        ],
+        "patient": patient_read,
+        "session_history": session_history,
+        "billing_history": billing_history,
     }
 
 
@@ -113,25 +120,15 @@ def create_patient(
         therapist = db.query(Therapist).filter(Therapist.id == payload.assigned_therapist_id).first()
         if not therapist:
             raise HTTPException(status_code=400, detail="Assigned therapist not found")
+
     patient = Patient(**payload.model_dump())
-    patient.created_at = payload.created_at or __import__("datetime").date.today()
     db.add(patient)
     db.commit()
     db.refresh(patient)
-    return {
-        "id": patient.id,
-        "name": patient.name,
-        "phone": patient.phone,
-        "age": patient.age,
-        "gender": patient.gender,
-        "address": patient.address,
-        "condition": patient.condition,
-        "assigned_therapist_id": patient.assigned_therapist_id,
-        "package": patient.package,
-        "status": patient.status,
-        "created_at": patient.created_at,
-        "therapist_name": therapist.name if payload.assigned_therapist_id else None,
-    }
+
+    patient_data = PatientRead.model_validate(patient)
+    patient_data.therapist_name = patient.therapist.name if patient.therapist else None
+    return patient_data
 
 
 @router.put("/{patient_id}", response_model=PatientRead)
@@ -144,38 +141,39 @@ def update_patient(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
-    if "assigned_therapist_id" in payload.model_fields_set and payload.assigned_therapist_id is not None:
+
+    if payload.assigned_therapist_id is not None:
         therapist = db.query(Therapist).filter(Therapist.id == payload.assigned_therapist_id).first()
         if not therapist:
             raise HTTPException(status_code=400, detail="Assigned therapist not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
         setattr(patient, field, value)
-    patient.created_at = payload.created_at or patient.created_at
+
     db.commit()
     db.refresh(patient)
-    return {
-        "id": patient.id,
-        "name": patient.name,
-        "phone": patient.phone,
-        "age": patient.age,
-        "gender": patient.gender,
-        "address": patient.address,
-        "condition": patient.condition,
-        "assigned_therapist_id": patient.assigned_therapist_id,
-        "package": patient.package,
-        "status": patient.status,
-        "created_at": patient.created_at,
-        "therapist_name": patient.therapist.name if patient.therapist else None,
-    }
+
+    patient_data = PatientRead.model_validate(patient)
+    patient_data.therapist_name = patient.therapist.name if patient.therapist else None
+    return patient_data
 
 
-@router.delete("/{patient_id}")
-def delete_patient(patient_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))):
+@router.delete("/{patient_id}", status_code=status.HTTP_200_OK)
+def delete_patient(
+    patient_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(require_roles("admin"))
+):
+    """Soft delete a patient by setting is_active to False."""
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
-    if db.query(Appointment).filter(Appointment.patient_id == patient.id).first() or db.query(Invoice).filter(Invoice.patient_id == patient.id).first():
-        raise HTTPException(status_code=409, detail="Patient has appointments or invoices and cannot be deleted")
-    db.delete(patient)
+
+    if not patient.is_active:
+        raise HTTPException(status_code=400, detail="Patient is already deactivated")
+
+    patient.is_active = False
     db.commit()
-    return {"message": "Patient deleted successfully"}
+
+    return {"message": "Patient deactivated successfully"}

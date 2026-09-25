@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -10,17 +10,50 @@ class Patient(Base):
     __tablename__ = "patients"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(120), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    age: Mapped[int] = mapped_column(nullable=False)
+    first_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     gender: Mapped[str] = mapped_column(String(30), nullable=False)
-    address: Mapped[str] = mapped_column(Text, nullable=False)
-    condition: Mapped[str] = mapped_column(String(120), nullable=False)
-    assigned_therapist_id: Mapped[int | None] = mapped_column(ForeignKey("therapists.id"), nullable=True)
-    package: Mapped[str] = mapped_column(String(60), nullable=False)
-    status: Mapped[str] = mapped_column(String(30), default="Active", nullable=False)
-    created_at: Mapped[date] = mapped_column(Date, nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    blood_group: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    allergies: Mapped[str | None] = mapped_column(Text, nullable=True)
+    medical_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    therapist: Mapped["Therapist | None"] = relationship(back_populates="patients")
-    appointments: Mapped[list["Appointment"]] = relationship(back_populates="patient")
-    invoices: Mapped[list["Invoice"]] = relationship(back_populates="patient")
+    assigned_therapist_id: Mapped[int | None] = mapped_column(
+        ForeignKey("therapists.id"),
+        nullable=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="Active",
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    therapist: Mapped["Therapist | None"] = relationship(
+        back_populates="patients"
+    )
+
+    appointments: Mapped[list["Appointment"]] = relationship(
+        back_populates="patient"
+    )
+
+    invoices: Mapped[list["Invoice"]] = relationship(
+        back_populates="patient"
+    )
+
+    consultations: Mapped[list["Consultation"]] = relationship(
+        back_populates="patient"
+    )
+    is_active: Mapped[bool] = mapped_column(
+    Boolean,
+    default=True,
+    nullable=False)
