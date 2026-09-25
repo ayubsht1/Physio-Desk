@@ -12,3 +12,5 @@ physiodesk-backend/venv/
 .env
 .env.*
 !.env.example
+
+.vscode/launch.json
