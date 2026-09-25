@@ -77,3 +77,9 @@ class User(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+
+    @property
+    def full_name(self) -> str:
+        if self.middle_name:
+            return f"{self.first_name} {self.middle_name} {self.last_name}".strip()
+        return f"{self.first_name} {self.last_name}".strip()

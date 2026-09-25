@@ -54,6 +54,25 @@ class Patient(Base):
         back_populates="patient"
     )
     is_active: Mapped[bool] = mapped_column(
-    Boolean,
-    default=True,
-    nullable=False)
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    @property
+    def name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def age(self) -> int | None:
+        if not self.date_of_birth:
+            return None
+        today = date.today()
+        return (
+            today.year
+            - self.date_of_birth.year
+            - (
+                (today.month, today.day)
+                < (self.date_of_birth.month, self.date_of_birth.day)
+            )
+        )

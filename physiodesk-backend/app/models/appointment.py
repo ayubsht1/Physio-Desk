@@ -74,8 +74,17 @@ class Appointment(Base):
         back_populates="appointments"
     )
     is_deleted: Mapped[bool] = mapped_column(
-    Boolean,
-    default=False,
-    nullable=False)
+        Boolean,
+        default=False,
+        nullable=False,
+    )
 
     created_by_user: Mapped["User | None"] = relationship()
+
+    @property
+    def is_active(self) -> bool:
+        return not self.is_deleted
+
+    @is_active.setter
+    def is_active(self, value: bool) -> None:
+        self.is_deleted = not value

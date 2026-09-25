@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Literal
 
@@ -117,6 +118,7 @@ class UserPublic(BaseModel):
     first_name: str
     middle_name: str | None = None
     last_name: str
+    full_name: str | None = None
     role: str
     is_active: bool
     created_at: datetime
@@ -165,6 +167,8 @@ class PatientUpdate(BaseModel):
 
 class PatientRead(PatientCreate):
     id: int
+    name: str | None = None
+    age: int | None = None
     therapist_name: str | None = None
     created_at: datetime
 
@@ -208,12 +212,13 @@ class TherapistCreate(BaseModel):
     @field_validator("start_time", "end_time")
     @classmethod
     def validate_time(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{2}:\d{2}", value):
+            raise ValueError("Time must use HH:MM format")
+
         try:
             datetime.strptime(value, "%H:%M")
         except ValueError as exc:
-            raise ValueError(
-                "Time must use HH:MM format"
-            ) from exc
+            raise ValueError("Time must use HH:MM format") from exc
 
         return value
 
@@ -280,12 +285,13 @@ class AppointmentCreate(BaseModel):
     @field_validator("start_time", "end_time")
     @classmethod
     def validate_time(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{2}:\d{2}", value):
+            raise ValueError("Time must use HH:MM format")
+
         try:
             datetime.strptime(value, "%H:%M")
         except ValueError as exc:
-            raise ValueError(
-                "Time must use HH:MM format"
-            ) from exc
+            raise ValueError("Time must use HH:MM format") from exc
 
         return value
 
@@ -329,6 +335,10 @@ class AppointmentUpdate(BaseModel):
     def validate_time(cls, value: str | None) -> str | None:
         if value is None:
             return value
+
+        if not re.fullmatch(r"\d{2}:\d{2}", value):
+            raise ValueError("Time must use HH:MM format")
+
         try:
             datetime.strptime(value, "%H:%M")
         except ValueError as exc:
@@ -360,25 +370,52 @@ class AppointmentRead(BaseModel):
 
 class InvoiceCreate(BaseModel):
     patient_id: int
-    service: str
+    appointment_id: int | None = None
+    invoice_number: str | None = None
     invoice_date: date
-    amount: float
-    status: Literal["Paid", "Due", "Void"] = "Due"
-    payment_method: str | None = None
+    subtotal: float
     discount: float = 0.0
+    tax: float = 0.0
+    total: float | None = None
+    status: Literal["Paid", "Due", "Void", "Pending"] = "Due"
     notes: str | None = None
 
-    @field_validator("amount", "discount")
+    @field_validator("subtotal", "discount", "tax")
     @classmethod
     def validate_money(cls, value: float) -> float:
         if value < 0:
-            raise ValueError("Amount and discount cannot be negative")
+            raise ValueError("Monetary values cannot be negative")
         return value
 
 
-class InvoiceRead(InvoiceCreate):
+class InvoiceUpdate(BaseModel):
+    patient_id: int | None = None
+    appointment_id: int | None = None
+    invoice_date: date | None = None
+    subtotal: float | None = None
+    discount: float | None = None
+    tax: float | None = None
+    total: float | None = None
+    status: Literal["Paid", "Due", "Void", "Pending"] | None = None
+    notes: str | None = None
+
+
+class InvoiceRead(BaseModel):
     id: int
+    invoice_number: str
+    patient_id: int
+    appointment_id: int | None = None
+    invoice_date: date
+    subtotal: float
+    discount: float = 0.0
+    tax: float = 0.0
+    total: float
+    status: str
+    notes: str | None = None
     patient_name: str | None = None
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DashboardStats(BaseModel):
@@ -386,8 +423,13 @@ class DashboardStats(BaseModel):
     therapists_on_duty_today: int
     revenue_collected_today: float
     open_slots_remaining_today: int
+    total_patients: int = 0
+    pending_requests: int = 0
+    completed_count: int = 0
+    cancelled_count: int = 0
     recent_patients: list[PatientRead] = Field(default_factory=list)
     therapist_capacity: list[dict] = Field(default_factory=list)
+
 
 
 class PatientDetail(BaseModel):

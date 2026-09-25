@@ -285,7 +285,7 @@ def admin_delete_appointment(
         raise HTTPException(status_code=404, detail="Appointment not found")
 
     # Soft delete instead of hard delete
-    appointment.is_active = False
+    appointment.is_deleted = True
     db.commit()
     return {"message": f"Appointment #{appointment_id} soft-deleted by admin."}
 
@@ -304,7 +304,7 @@ def admin_create_appointment(
 
     data = payload.model_dump()
     data["created_by"] = current_admin.id
-    data["is_active"] = True
+    data["is_deleted"] = False
 
     appointment = Appointment(**data)
     db.add(appointment)
@@ -321,7 +321,7 @@ def admin_create_appointment(
         "status": appointment.status,
         "reason": appointment.reason,
         "notes": appointment.notes,
-        "patient_name": f"{patient.first_name} {patient.last_name}" if hasattr(patient, 'first_name') else getattr(patient, 'name', None),
+        "patient_name": patient.name,
         "therapist_name": therapist.name,
         "created_by": appointment.created_by,
         "created_at": appointment.created_at,
@@ -342,7 +342,7 @@ def admin_list_all_appointments(
     query = db.query(Appointment)
 
     if not include_inactive:
-        query = query.filter(Appointment.is_active == True)
+        query = query.filter(Appointment.is_deleted == False)
 
     if status_filter:
         query = query.filter(Appointment.status == status_filter)
@@ -368,7 +368,7 @@ def admin_list_all_appointments(
             "status": item.status,
             "reason": item.reason,
             "notes": item.notes,
-            "patient_name": f"{item.patient.first_name} {item.patient.last_name}" if hasattr(item.patient, 'first_name') else getattr(item.patient, 'name', None),
+            "patient_name": item.patient.name if item.patient else None,
             "therapist_name": item.therapist.name if item.therapist else None,
             "created_by": item.created_by,
             "created_at": item.created_at,
@@ -405,7 +405,7 @@ def admin_override_appointment(
         "status": appointment.status,
         "reason": appointment.reason,
         "notes": appointment.notes,
-        "patient_name": f"{appointment.patient.first_name} {appointment.patient.last_name}" if hasattr(appointment.patient, 'first_name') else getattr(appointment.patient, 'name', None),
+        "patient_name": appointment.patient.name if appointment.patient else None,
         "therapist_name": appointment.therapist.name if appointment.therapist else None,
         "created_by": appointment.created_by,
         "created_at": appointment.created_at,
