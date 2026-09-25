@@ -21,7 +21,8 @@ services:
     build:
       context: ./physiodesk-backend
     environment:
-      DATABASE_URL: postgresql+psycopg2://physio:physio@postgres:5432/physio_desk
+      # DATABASE_URL: postgresql+psycopg2://physio:physio@postgres:5432/physio_desk
+      DATABASE_URL: sqlite:///./physiodesk.db
       CORS_ORIGINS: http://localhost:3000
       JWT_SECRET_KEY: change-this-development-secret
     depends_on:
