@@ -42,10 +42,10 @@ def seed() -> None:
         )
 
         staff = User(
-            username="reception",
-            email="reception@physiodesk.com",
-            first_name="Sushmita",
-            last_name="Adhikari",
+            username="staff",
+            email="staff@physiodesk.com",
+            first_name="Sam",
+            last_name="Rivera",
             password_hash=pwd_context.hash("staff123"),
             role="staff",
             is_active=True,
@@ -347,6 +347,7 @@ def seed() -> None:
         appointments = [
             # Today's appointments
             Appointment(
+                booking_id="PHY-NEP-829101",
                 patient_id=patients[0].id,
                 therapist_id=therapists[0].id,
                 appointment_date=today,
@@ -355,13 +356,14 @@ def seed() -> None:
                 status="Completed",
                 reason="ACL Rehabilitation Session 4",
                 notes=(
-                    "Ref: PHY-NEP-829101. Good quadriceps activation. "
+                    "Good quadriceps activation. "
                     "Patient reports reduced swelling and improved walking tolerance."
                 ),
                 created_by=admin.id,
                 is_deleted=False,
             ),
             Appointment(
+                booking_id="PHY-NEP-829102",
                 patient_id=patients[2].id,
                 therapist_id=therapists[2].id,
                 appointment_date=today,
@@ -370,13 +372,14 @@ def seed() -> None:
                 status="Confirmed",
                 reason="Shoulder Mobility & Rotator Cuff Rehabilitation",
                 notes=(
-                    "Ref: PHY-NEP-829102. Patient reports pain reduced "
+                    "Patient reports pain reduced "
                     "from 7/10 to 3/10 after previous sessions."
                 ),
                 created_by=staff.id,
                 is_deleted=False,
             ),
             Appointment(
+                booking_id="PHY-NEP-829103",
                 patient_id=patients[4].id,
                 therapist_id=therapists[3].id,
                 appointment_date=today,
@@ -385,13 +388,14 @@ def seed() -> None:
                 status="Scheduled",
                 reason="Post-operative Knee Rehabilitation",
                 notes=(
-                    "Ref: PHY-NEP-829103. Focus on knee flexion, "
-                    "quadriceps activation, and gait training."
+                    "Focus on knee flexion, quadriceps activation, "
+                    "and gait training."
                 ),
                 created_by=admin.id,
                 is_deleted=False,
             ),
             Appointment(
+                booking_id="PHY-NEP-829104",
                 patient_id=patients[5].id,
                 therapist_id=therapists[1].id,
                 appointment_date=today,
@@ -400,7 +404,7 @@ def seed() -> None:
                 status="Confirmed",
                 reason="Ankle Proprioception & Rehabilitation",
                 notes=(
-                    "Ref: PHY-NEP-829104. Patient progressing well "
+                    "Patient progressing well "
                     "and preparing to return to recreational football."
                 ),
                 created_by=staff.id,
@@ -409,6 +413,7 @@ def seed() -> None:
 
             # Tomorrow's appointments
             Appointment(
+                booking_id="PHY-NEP-829105",
                 patient_id=patients[7].id,
                 therapist_id=therapists[3].id,
                 appointment_date=today + timedelta(days=1),
@@ -417,13 +422,14 @@ def seed() -> None:
                 status="Scheduled",
                 reason="Cervical Radiculopathy Follow-up",
                 notes=(
-                    "Ref: PHY-NEP-829105. Review arm symptoms, "
-                    "cervical mobility, and neurological signs."
+                    "Review arm symptoms, cervical mobility, "
+                    "and neurological signs."
                 ),
                 created_by=staff.id,
                 is_deleted=False,
             ),
             Appointment(
+                booking_id="PHY-NEP-829106",
                 patient_id=patients[0].id,
                 therapist_id=therapists[0].id,
                 appointment_date=today + timedelta(days=2),
@@ -432,7 +438,7 @@ def seed() -> None:
                 status="Scheduled",
                 reason="ACL Strength Progress Assessment",
                 notes=(
-                    "Ref: PHY-NEP-829106. Assess lower-limb strength "
+                    "Assess lower-limb strength "
                     "and progress rehabilitation exercises."
                 ),
                 created_by=admin.id,
@@ -441,6 +447,7 @@ def seed() -> None:
 
             # Past appointment
             Appointment(
+                booking_id="PHY-NEP-829100",
                 patient_id=patients[1].id,
                 therapist_id=therapists[1].id,
                 appointment_date=today - timedelta(days=3),
@@ -449,8 +456,8 @@ def seed() -> None:
                 status="Completed",
                 reason="Final Lower Back Rehabilitation Assessment",
                 notes=(
-                    "Ref: PHY-NEP-829100. Patient completed the rehabilitation "
-                    "program and was provided with a home exercise plan."
+                    "Patient completed the rehabilitation program "
+                    "and was provided with a home exercise plan."
                 ),
                 created_by=admin.id,
                 is_deleted=False,

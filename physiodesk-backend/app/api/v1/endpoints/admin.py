@@ -89,11 +89,19 @@ def update_user(
 
     if user.id == current_admin.id and payload.is_active is False:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot deactivate your own admin account.")
+    
+    if user.id == current_admin.id and payload.role and payload.role != "admin":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot demote your own admin account.")
 
     update_data = payload.model_dump(exclude_unset=True)
+
     if "email" in update_data and update_data["email"] != user.email:
         if db.query(User).filter(User.email == update_data["email"]).first():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already taken")
+
+    if "username" in update_data and update_data["username"] != user.username:
+        if db.query(User).filter(User.username == update_data["username"]).first():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     for key, value in update_data.items():
         setattr(user, key, value)

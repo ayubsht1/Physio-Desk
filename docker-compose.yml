@@ -1,21 +1,21 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: physio-desk
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: physio
-      POSTGRES_PASSWORD: physio
-      POSTGRES_DB: physio_desk
-    ports:
-      - "5432:5432"
-    volumes:
-      - physio-desk-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U physio -d physio_desk"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  # postgres:
+  #   image: postgres:16
+  #   container_name: physio-desk
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: physio
+  #     POSTGRES_PASSWORD: physio
+  #     POSTGRES_DB: physio_desk
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - physio-desk-data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U physio -d physio_desk"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
 
   backend:
     build:
@@ -25,9 +25,9 @@ services:
       DATABASE_URL: sqlite:///./physiodesk.db
       CORS_ORIGINS: http://localhost:3000
       JWT_SECRET_KEY: change-this-development-secret
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
     ports:
       - "8000:8000"
 

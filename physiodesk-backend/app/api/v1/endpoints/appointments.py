@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-
+from sqlalchemy import or_, func
 from app.core.database import get_db
 from app.core.scheduling import DAY_NAMES, ensure_no_overlap, parse_time, validate_appointment_schedule
 from app.core.security import get_current_user, require_roles, get_current_user_optional
@@ -34,6 +34,7 @@ def format_appointment(item: Appointment) -> dict:
         "therapist_name": item.therapist.name if item.therapist else None,
         "created_by": item.created_by,
         "created_at": item.created_at,
+        "booking_id": item.booking_id,
     }
 
 
@@ -42,19 +43,48 @@ def list_appointments(
     date_filter: date | None = Query(default=None, alias="date"),
     therapist_id: int | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    search: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Appointment).filter(Appointment.is_deleted == False)
-
+    query = (
+        db.query(Appointment)
+        .join(Patient, Appointment.patient_id == Patient.id)
+        .filter(Appointment.is_deleted == False)
+    )
     if date_filter:
-        query = query.filter(Appointment.appointment_date == date_filter)
+        query = query.filter(
+            Appointment.appointment_date == date_filter
+        )
     if therapist_id:
-        query = query.filter(Appointment.therapist_id == therapist_id)
+        query = query.filter(
+            Appointment.therapist_id == therapist_id
+        )
     if status_filter:
-        query = query.filter(Appointment.status == status_filter)
+        query = query.filter(
+            Appointment.status == status_filter
+        )
+    if search:
+        search = search.strip()
 
-    appointments = query.order_by(Appointment.appointment_date.desc(), Appointment.start_time.asc()).all()
+        full_name = Patient.first_name + " " + Patient.last_name
+
+        query = query.filter(
+            or_(
+                Appointment.booking_id.ilike(f"%{search}%"),
+                Patient.phone.ilike(f"%{search}%"),
+                Patient.first_name.ilike(f"%{search}%"),
+                Patient.last_name.ilike(f"%{search}%"),
+                full_name.ilike(f"%{search}%"),
+            )
+        )
+    appointments = (
+        query
+        .order_by(
+            Appointment.appointment_date.desc(),
+            Appointment.start_time.asc(),
+        )
+        .all()
+    )
     return [format_appointment(item) for item in appointments]
 
 

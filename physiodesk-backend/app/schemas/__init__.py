@@ -74,10 +74,21 @@ class UserUpdate(BaseModel):
     first_name: str | None = Field(default=None, min_length=1, max_length=80)
     middle_name: str | None = Field(default=None, max_length=80)
     last_name: str | None = Field(default=None, min_length=1, max_length=80)
+    username: str | None = Field(default=None, min_length=3, max_length=80)
     email: EmailStr | None = None
     role: Literal["admin", "staff"] | None = None
     is_active: bool | None = None
     notes: str | None = None
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip().lower()
+            if " " in value:
+                raise ValueError("Username cannot contain spaces")
+            return value
+        return value
 
     @field_validator("first_name", "last_name")
     @classmethod

@@ -1,9 +1,13 @@
+import secrets
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text, Boolean
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+def generate_booking_id() -> str:
+    return f"PHY-NEP-{secrets.randbelow(900000) + 100000}"
 
 
 class Appointment(Base):
@@ -11,65 +15,18 @@ class Appointment(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
+    booking_id: Mapped[str] = mapped_column(
+        String(20),
+        unique=True,
+        nullable=False,
+        index=True,
+        default=generate_booking_id,
+    )
+
     patient_id: Mapped[int] = mapped_column(
         ForeignKey("patients.id"),
         nullable=False,
         index=True,
-    )
-
-    therapist_id: Mapped[int] = mapped_column(
-        ForeignKey("therapists.id"),
-        nullable=False,
-        index=True,
-    )
-
-    service_id: Mapped[int | None] = mapped_column(
-        ForeignKey("services.id"),
-        nullable=True,
-        index=True,
-    )
-
-    appointment_date: Mapped[date] = mapped_column(
-        Date,
-        nullable=False,
-        index=True,
-    )
-
-    start_time: Mapped[str] = mapped_column(
-        String(20),
-        nullable=False,
-    )
-
-    end_time: Mapped[str] = mapped_column(
-        String(20),
-        nullable=False,
-    )
-
-    status: Mapped[str] = mapped_column(
-        String(30),
-        default="Scheduled",
-        nullable=False,
-    )
-
-    reason: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
-    notes: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
-    created_by: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"),
-        nullable=True,
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        nullable=False,
     )
 
     patient: Mapped["Patient"] = relationship(
