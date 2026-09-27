@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
 
-const backendUrl = process.env.BACKEND_API_URL ?? "http://localhost:8000/api/v1";
-const backendUrls = [
-  backendUrl,
-  ...(new URL(backendUrl).hostname === "backend"
-    ? [backendUrl.replace("//backend:", "//localhost:")]
-    : []),
-];
+const backendUrl = process.env.BACKEND_API_URL;
 
 export async function proxyBackend(
   request: Request,
@@ -14,40 +8,57 @@ export async function proxyBackend(
   method = request.method,
   bodyOverride?: string,
 ) {
-  const headers = new Headers();
-  const authorization = request.headers.get("authorization");
-  if (authorization) headers.set("authorization", authorization);
-
-  let body: string | undefined;
-  if (!["GET", "HEAD"].includes(method)) {
-    body = bodyOverride ?? await request.text();
-    headers.set("content-type", request.headers.get("content-type") ?? "application/json");
+  if (!backendUrl) {
+    return NextResponse.json(
+      { detail: "BACKEND_API_URL is not configured" },
+      { status: 500 },
+    );
   }
 
-  let response: Response | undefined;
-  for (const url of backendUrls) {
-    try {
-      response = await fetch(`${url.replace(/\/$/, "")}${path}`, {
+  const headers = new Headers();
+
+  const authorization = request.headers.get("authorization");
+  if (authorization) {
+    headers.set("authorization", authorization);
+  }
+
+  let body: string | undefined;
+
+  if (!["GET", "HEAD"].includes(method)) {
+    body = bodyOverride ?? await request.text();
+
+    headers.set(
+      "content-type",
+      request.headers.get("content-type") ?? "application/json",
+    );
+  }
+
+  try {
+    const response = await fetch(
+      `${backendUrl.replace(/\/$/, "")}${path}`,
+      {
         method,
         headers,
         body,
         cache: "no-store",
-      });
-      break;
-    } catch {
-    }
-  }
+      },
+    );
 
-  if (!response) {
+    const responseBody = await response.text();
+
+    return new NextResponse(responseBody || null, {
+      status: response.status,
+      headers: {
+        "content-type":
+          response.headers.get("content-type") ?? "application/json",
+      },
+    });
+  } catch (error) {
+    console.error("Backend proxy error:", error);
+
     return NextResponse.json(
-      { detail: "The backend API is unavailable. Start the backend service and try again." },
+      { detail: "The backend API is unavailable." },
       { status: 502 },
     );
   }
-
-  const responseBody = await response.text();
-  return new NextResponse(responseBody || null, {
-    status: response.status,
-    headers: { "content-type": response.headers.get("content-type") ?? "application/json" },
-  });
 }
