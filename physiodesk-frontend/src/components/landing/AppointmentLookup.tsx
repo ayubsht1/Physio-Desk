@@ -267,14 +267,6 @@ export function AppointmentLookup() {
                         </span>
 
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => window.print()}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-[#ded5c2] hover:bg-[#fbf9f4] rounded-lg text-[#554d40] transition-colors"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            Print
-                          </button>
 
                           {isBooked && (
                             <button
