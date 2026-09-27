@@ -310,6 +310,9 @@ export function UsersTab({
           onClose={() => setEditingUser(null)}
           onSave={async (payload) => {
             await api.updateUser(editingUser.id, payload);
+            if (payload.password) {
+              await api.resetUserPassword(editingUser.id, payload.password);
+            }
             setEditingUser(null);
             await fetchUsers();
             await onReload();

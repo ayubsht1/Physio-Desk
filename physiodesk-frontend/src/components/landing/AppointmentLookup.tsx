@@ -57,10 +57,10 @@ export function AppointmentLookup() {
   };
 
   const quickSearches = [
-    { label: "Sunita Gurung", phone: "+977 9841234567" },
-    { label: "Roshan Karki", phone: "+977 9801234568" },
-    { label: "Anjali Maharjan", phone: "+977 9851023456" },
-    { label: "Laxmi Shrestha", phone: "+977 9849876543" },
+    { label: "Aayush Sharma", phone: "9801234567" },
+    { label: "Mina Gurung", phone: "9812345678" },
+    { label: "Bikash Tamang", phone: "9823456789" },
+    { label: "Sarita KC", phone: "9834567890" },
   ];
 
   return (
@@ -95,7 +95,7 @@ export function AppointmentLookup() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Enter mobile (e.g. 9841234567) or Booking ID (e.g. PD-APT-1)"
+                placeholder="Enter mobile (e.g. 9841234567) or Booking ID (e.g. PHY-NEP-1)"
                 className="w-full pl-10 pr-4 py-3 bg-[#fdfcf9] border border-[#d9d0be] rounded-xl text-sm text-[#18221e] placeholder:text-[#999080] focus:outline-hidden focus:border-[#b8763a] focus:bg-white"
               />
             </div>

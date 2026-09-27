@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 const backendUrl = process.env.BACKEND_API_URL ?? "http://localhost:8000/api/v1";
+const backendUrls = [
+  backendUrl,
+  ...(new URL(backendUrl).hostname === "backend"
+    ? [backendUrl.replace("//backend:", "//localhost:")]
+    : []),
+];
 
 export async function proxyBackend(
   request: Request,
@@ -18,15 +24,21 @@ export async function proxyBackend(
     headers.set("content-type", request.headers.get("content-type") ?? "application/json");
   }
 
-  let response: Response;
-  try {
-    response = await fetch(`${backendUrl.replace(/\/$/, "")}${path}`, {
-      method,
-      headers,
-      body,
-      cache: "no-store",
-    });
-  } catch {
+  let response: Response | undefined;
+  for (const url of backendUrls) {
+    try {
+      response = await fetch(`${url.replace(/\/$/, "")}${path}`, {
+        method,
+        headers,
+        body,
+        cache: "no-store",
+      });
+      break;
+    } catch {
+    }
+  }
+
+  if (!response) {
     return NextResponse.json(
       { detail: "The backend API is unavailable. Start the backend service and try again." },
       { status: 502 },

@@ -28,6 +28,7 @@ export type UserPayload = {
 function userPayloadForBackend(payload: UserPayload | Partial<UserPayload>) {
   const fullName = payload.full_name?.trim().split(/\s+/) ?? [];
   const { full_name: _, phone: __, ...rest } = payload;
+  delete rest.password;
   const result = {
     ...rest,
   };
@@ -36,7 +37,6 @@ function userPayloadForBackend(payload: UserPayload | Partial<UserPayload>) {
       ...result,
       first_name: fullName[0] ?? "Staff",
       last_name: fullName.slice(1).join(" ") || "User",
-      password: "password" in payload && payload.password ? payload.password : "welcome123",
     };
   }
   return result;
@@ -310,14 +310,31 @@ export const api = {
     if (params?.search) q.set("search", params.search);
     if (params?.role) q.set("role", params.role);
     const qs = q.toString();
-    return request<User[]>(`/users${qs ? `?${qs}` : ""}`);
+    return request<User[]>(`/admin/users${qs ? `?${qs}` : ""}`);
   },
   createUser: (payload: UserPayload) =>
-    request<User>("/users", { method: "POST", body: JSON.stringify(userPayloadForBackend(payload)) }),
+    request<User>("/admin/users", {
+      method: "POST",
+      body: JSON.stringify({
+        ...userPayloadForBackend(payload),
+        password: payload.password ?? "welcome123",
+      }),
+    }),
   updateUser: (id: number, payload: Partial<UserPayload>) =>
-    request<User>(`/users/${id}`, { method: "PUT", body: JSON.stringify(userPayloadForBackend(payload)) }),
+    request<User>(`/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(userPayloadForBackend(payload)),
+    }),
   deleteUser: (id: number) =>
-    request<{ message: string }>(`/users/${id}`, { method: "DELETE" }),
+    request<User>(`/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: false }),
+    }),
+  resetUserPassword: (id: number, newPassword: string) =>
+    request<{ message: string }>(`/admin/users/${id}/reset-password`, {
+      method: "POST",
+      body: JSON.stringify({ new_password: newPassword }),
+    }),
   services: (params?: { category?: string; include_inactive?: boolean }) => {
     const q = new URLSearchParams();
     if (params?.category) q.set("category", params.category);
