@@ -432,13 +432,15 @@ class InvoiceUpdate(BaseModel):
     patient_id: int | None = None
     appointment_id: int | None = None
     service_id: int | None = None
+    invoice_number: str | None = None
     invoice_date: date | None = None
     subtotal: float | None = None
     discount: float | None = None
     tax: float | None = None
     total: float | None = None
-    status: Literal["Paid", "Due", "Void", "Pending"] | None = None
+    status: str | None = None
     notes: str | None = None
+    payment_method: str | None = None
 
 
 class InvoiceRead(BaseModel):

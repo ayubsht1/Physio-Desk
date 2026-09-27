@@ -51,13 +51,36 @@ function appointmentPayloadForBackend(payload: AppointmentPayload | Partial<Appo
   };
 }
 
-function invoicePayloadForBackend(payload: InvoicePayload | Partial<InvoicePayload>) {
-  const { service: _, amount, payment_method: __, ...rest } = payload;
+function invoicePayloadForBackend(
+  payload: InvoicePayload | Partial<InvoicePayload>
+) {
+  const {
+    service: _service,
+    amount,
+    payment_method: _payment_method,
+    ...rest
+  } = payload;
+
   return {
     ...rest,
-    subtotal: payload.subtotal ?? amount ?? 0,
-    total: payload.total ?? amount ?? 0,
-    invoice_date: payload.invoice_date ?? new Date().toISOString().slice(0, 10),
+
+    ...(payload.subtotal !== undefined || amount !== undefined
+      ? {
+          subtotal: payload.subtotal ?? amount ?? 0,
+        }
+      : {}),
+
+    ...(payload.total !== undefined || amount !== undefined
+      ? {
+          total: payload.total ?? amount ?? 0,
+        }
+      : {}),
+
+    ...(payload.invoice_date !== undefined
+      ? {
+          invoice_date: payload.invoice_date,
+        }
+      : {}),
   };
 }
 
@@ -209,16 +232,17 @@ export type PatientPayload = {
 export type TherapistPayload = Omit<Therapist, "id" | "image">;
 export type AppointmentPayload = Omit<Appointment, "id" | "patient_name" | "therapist_name">;
 export type InvoicePayload = {
-  patient_id: number;
+  patient_id?: number;
   appointment_id?: number | null;
   service_id?: number | null;
-  invoice_date: string;
+  invoice_date?: string;
+  invoice_number?: string;
   subtotal?: number;
   amount?: number;
   discount?: number;
   tax?: number;
   total?: number;
-  status: "Paid" | "Due" | "Void" | "Pending";
+  status?: "Paid" | "Due" | "Void" | "Pending";
   notes?: string | null;
   service?: string;
   payment_method?: string | null;
@@ -316,10 +340,21 @@ export const api = {
   deleteAppointment: (id: number) => request<void>(`/appointments/${id}`, { method: "DELETE" }),
   invoices: (status = "") => request<Invoice[]>(`/billing${status ? `?status=${status}` : ""}`),
   createInvoice: (payload: InvoicePayload) =>
-    request<Invoice>("/billing", { method: "POST", body: JSON.stringify(invoicePayloadForBackend(payload)) }),
-  updateInvoice: (id: number, payload: InvoicePayload) =>
-    request<Invoice>(`/billing/${id}`, { method: "PUT", body: JSON.stringify(invoicePayloadForBackend(payload)) }),
-  deleteInvoice: (id: number) => request<void>(`/billing/${id}`, { method: "DELETE" }),
+  request<Invoice>("/billing", {
+    method: "POST",
+    body: JSON.stringify(invoicePayloadForBackend(payload)),
+  }),
+
+updateInvoice: (id: number, payload: Partial<InvoicePayload>) =>
+  request<Invoice>(`/billing/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(invoicePayloadForBackend(payload)),
+  }),
+
+deleteInvoice: (id: number) =>
+  request<void>(`/billing/${id}`, {
+    method: "DELETE",
+  }),
   users: (params?: { search?: string; role?: string }) => {
     const q = new URLSearchParams();
     if (params?.search) q.set("search", params.search);
