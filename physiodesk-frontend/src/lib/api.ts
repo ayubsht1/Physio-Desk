@@ -169,6 +169,7 @@ export type Invoice = {
   total: number;
   status: "Paid" | "Due" | "Void" | "Pending";
   discount: number;
+  payment_method?: string | null;
   notes?: string | null;
   patient_name?: string | null;
 };

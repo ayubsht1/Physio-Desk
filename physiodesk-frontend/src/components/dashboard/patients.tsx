@@ -347,7 +347,7 @@ export function PatientsTab({
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-mono font-semibold text-[#18221e]">
-                        {money(inv.amount - inv.discount)}
+                        {money((inv.amount ?? inv.total) - inv.discount)}
                       </span>
                       <StatusBadge text={inv.status} />
                     </div>

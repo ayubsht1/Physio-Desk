@@ -516,10 +516,14 @@ export class ClinicStore {
     this.invoices = [
       {
         id: 1,
+        invoice_number: "INV-0001",
         patient_id: 1,
         service: "Sports Injury & ACL Rehabilitation",
         invoice_date: today,
         amount: 1800,
+        subtotal: 1800,
+        tax: 0,
+        total: 1600,
         discount: 200,
         status: "Paid",
         payment_method: "Fonepay / QR",
@@ -528,10 +532,14 @@ export class ClinicStore {
       },
       {
         id: 2,
+        invoice_number: "INV-0002",
         patient_id: 3,
         service: "Spine, Posture & Cervical Decompression",
         invoice_date: today,
         amount: 1500,
+        subtotal: 1500,
+        tax: 0,
+        total: 1500,
         discount: 0,
         status: "Due",
         payment_method: "eSewa",
@@ -540,10 +548,14 @@ export class ClinicStore {
       },
       {
         id: 3,
+        invoice_number: "INV-0003",
         patient_id: 5,
         service: "Post-Surgical Knee & Hip Rehabilitation",
         invoice_date: today,
         amount: 2500,
+        subtotal: 2500,
+        tax: 0,
+        total: 2200,
         discount: 300,
         status: "Paid",
         payment_method: "Khalti",
@@ -552,10 +564,14 @@ export class ClinicStore {
       },
       {
         id: 4,
+        invoice_number: "INV-0004",
         patient_id: 2,
         service: "Final Clinical Assessment & Discharge Protocol",
         invoice_date: yesterday,
         amount: 2000,
+        subtotal: 2000,
+        tax: 0,
+        total: 1800,
         discount: 200,
         status: "Paid",
         payment_method: "Card",
@@ -564,10 +580,14 @@ export class ClinicStore {
       },
       {
         id: 5,
+        invoice_number: "INV-0005",
         patient_id: 6,
         service: "Neurological & Gait Rehabilitation",
         invoice_date: yesterday,
         amount: 2000,
+        subtotal: 2000,
+        tax: 0,
+        total: 2000,
         discount: 0,
         status: "Due",
         payment_method: "Cash",
@@ -593,7 +613,7 @@ export class ClinicStore {
 
     const revenueCollectedToday = this.invoices
       .filter((i) => i.invoice_date === today && i.status === "Paid")
-      .reduce((sum, i) => sum + (i.amount - i.discount), 0);
+      .reduce((sum, i) => sum + ((i.amount ?? i.total) - i.discount), 0);
 
     let totalSlots = 0;
     const capacityList: { therapist_name: string; specialty: string; booked: number; free: number }[] = [];
