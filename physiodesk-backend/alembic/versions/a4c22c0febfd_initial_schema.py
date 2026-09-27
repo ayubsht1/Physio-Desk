@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 42c0994894e1
+Revision ID: a4c22c0febfd
 Revises: 
-Create Date: 2026-09-26 01:52:32.529304
+Create Date: 2026-09-27 22:25:03.801627
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '42c0994894e1'
+revision = 'a4c22c0febfd'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -95,29 +95,15 @@ def upgrade() -> None:
     )
     op.create_table('appointments',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('booking_id', sa.String(length=20), nullable=False),
     sa.Column('patient_id', sa.Integer(), nullable=False),
-    sa.Column('therapist_id', sa.Integer(), nullable=False),
-    sa.Column('service_id', sa.Integer(), nullable=True),
-    sa.Column('appointment_date', sa.Date(), nullable=False),
-    sa.Column('start_time', sa.String(length=20), nullable=False),
-    sa.Column('end_time', sa.String(length=20), nullable=False),
-    sa.Column('status', sa.String(length=30), nullable=False),
-    sa.Column('reason', sa.Text(), nullable=True),
-    sa.Column('notes', sa.Text(), nullable=True),
-    sa.Column('created_by', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
-    sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ),
-    sa.ForeignKeyConstraint(['service_id'], ['services.id'], ),
-    sa.ForeignKeyConstraint(['therapist_id'], ['therapists.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_appointments_appointment_date'), 'appointments', ['appointment_date'], unique=False)
+    op.create_index(op.f('ix_appointments_booking_id'), 'appointments', ['booking_id'], unique=True)
     op.create_index(op.f('ix_appointments_id'), 'appointments', ['id'], unique=False)
     op.create_index(op.f('ix_appointments_patient_id'), 'appointments', ['patient_id'], unique=False)
-    op.create_index(op.f('ix_appointments_service_id'), 'appointments', ['service_id'], unique=False)
-    op.create_index(op.f('ix_appointments_therapist_id'), 'appointments', ['therapist_id'], unique=False)
     op.create_table('consultations',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('appointment_id', sa.Integer(), nullable=False),
@@ -219,11 +205,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_consultations_patient_id'), table_name='consultations')
     op.drop_index(op.f('ix_consultations_id'), table_name='consultations')
     op.drop_table('consultations')
-    op.drop_index(op.f('ix_appointments_therapist_id'), table_name='appointments')
-    op.drop_index(op.f('ix_appointments_service_id'), table_name='appointments')
     op.drop_index(op.f('ix_appointments_patient_id'), table_name='appointments')
     op.drop_index(op.f('ix_appointments_id'), table_name='appointments')
-    op.drop_index(op.f('ix_appointments_appointment_date'), table_name='appointments')
+    op.drop_index(op.f('ix_appointments_booking_id'), table_name='appointments')
     op.drop_table('appointments')
     op.drop_table('therapist_services')
     op.drop_index(op.f('ix_patients_id'), table_name='patients')
