@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: a4c22c0febfd
+Revision ID: 40bdac6aed7d
 Revises: 
-Create Date: 2026-09-27 22:25:03.801627
+Create Date: 2026-09-27 22:34:47.613196
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a4c22c0febfd'
+revision = '40bdac6aed7d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -97,13 +97,16 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('booking_id', sa.String(length=20), nullable=False),
     sa.Column('patient_id', sa.Integer(), nullable=False),
+    sa.Column('therapist_id', sa.Integer(), nullable=False),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ),
+    sa.ForeignKeyConstraint(['therapist_id'], ['therapists.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_appointments_booking_id'), 'appointments', ['booking_id'], unique=True)
     op.create_index(op.f('ix_appointments_id'), 'appointments', ['id'], unique=False)
     op.create_index(op.f('ix_appointments_patient_id'), 'appointments', ['patient_id'], unique=False)
+    op.create_index(op.f('ix_appointments_therapist_id'), 'appointments', ['therapist_id'], unique=False)
     op.create_table('consultations',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('appointment_id', sa.Integer(), nullable=False),
@@ -205,6 +208,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_consultations_patient_id'), table_name='consultations')
     op.drop_index(op.f('ix_consultations_id'), table_name='consultations')
     op.drop_table('consultations')
+    op.drop_index(op.f('ix_appointments_therapist_id'), table_name='appointments')
     op.drop_index(op.f('ix_appointments_patient_id'), table_name='appointments')
     op.drop_index(op.f('ix_appointments_id'), table_name='appointments')
     op.drop_index(op.f('ix_appointments_booking_id'), table_name='appointments')

@@ -1,7 +1,6 @@
 import secrets
-from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -31,6 +30,12 @@ class Appointment(Base):
 
     patient: Mapped["Patient"] = relationship(
         back_populates="appointments"
+    )
+
+    therapist_id: Mapped[int] = mapped_column(
+        ForeignKey("therapists.id"),
+        nullable=False,
+        index=True,
     )
 
     therapist: Mapped["Therapist"] = relationship(
