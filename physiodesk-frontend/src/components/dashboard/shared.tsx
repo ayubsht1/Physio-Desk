@@ -10,10 +10,12 @@ export function money(value: number) {
 export async function downloadInvoicePdf(invoice: Invoice) {
   const { jsPDF } = await import("jspdf");
   const document = new jsPDF();
-  const subtotal = invoice.subtotal ?? invoice.amount;
+  const subtotal = Number(invoice.subtotal ?? invoice.amount ?? 0);
   const discount = invoice.discount ?? 0;
-  const total = invoice.total ?? Math.max(subtotal - discount, 0);
+  const total = Number(invoice.total ?? Math.max(subtotal - discount, 0));
   const invoiceNumber = invoice.invoice_number ?? `INV-${invoice.id}`;
+  const serviceName = invoice.service ?? invoice.service_name ?? "Physiotherapy treatment";
+  const fileName = invoiceNumber.replace(/[^a-z0-9_-]/gi, "_");
 
   document.setFillColor(19, 36, 32);
   document.rect(0, 0, 210, 38, "F");
@@ -38,13 +40,13 @@ export async function downloadInvoicePdf(invoice: Invoice) {
   document.setFontSize(12);
   document.text(invoice.patient_name ?? "Patient", 20, 106);
   document.setFontSize(10);
-  document.text(invoice.service ?? "Physiotherapy treatment", 20, 116);
+  document.text(serviceName, 20, 116);
 
   document.line(20, 129, 190, 129);
   document.text("Description", 20, 140);
   document.text("Amount", 158, 140);
   document.line(20, 145, 190, 145);
-  document.text(invoice.service ?? "Treatment session", 20, 156);
+  document.text(document.splitTextToSize(serviceName, 125), 20, 156);
   document.text(money(subtotal), 158, 156);
   document.text("Discount", 20, 167);
   document.text(`-${money(discount)}`, 158, 167);
@@ -62,7 +64,7 @@ export async function downloadInvoicePdf(invoice: Invoice) {
   document.setTextColor(113, 106, 93);
   document.setFontSize(9);
   document.text("Thank you for choosing Physio Desk.", 20, 278);
-  document.save(`${invoiceNumber}.pdf`);
+  document.save(`${fileName}.pdf`);
 }
 
 export function StatusBadge({ text }: { text: string }) {

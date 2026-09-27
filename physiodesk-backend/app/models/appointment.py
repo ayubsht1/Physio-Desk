@@ -1,6 +1,7 @@
 import secrets
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -42,6 +43,43 @@ class Appointment(Base):
         back_populates="appointments"
     )
 
+    appointment_date: Mapped[date] = mapped_column(
+        Date,
+        nullable=False,
+    )
+
+    start_time: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    end_time: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="Scheduled",
+        nullable=False,
+    )
+
+    reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    notes: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    service_id: Mapped[int | None] = mapped_column(
+        ForeignKey("services.id"),
+        nullable=True,
+        index=True,
+    )
+
     service: Mapped["Service | None"] = relationship(
         back_populates="appointments"
     )
@@ -56,6 +94,17 @@ class Appointment(Base):
     )
 
     created_by_user: Mapped["User | None"] = relationship()
+
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
 
     @property
     def is_active(self) -> bool:

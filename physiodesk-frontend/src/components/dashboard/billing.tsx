@@ -62,10 +62,12 @@ export function BillingTab({
                   <td className="py-3 px-4 font-bold text-[#18221e]">
                     {inv.patient_name}
                   </td>
-                  <td className="py-3 px-4 text-[#554d40]">{inv.service}</td>
+                  <td className="py-3 px-4 text-[#554d40]">
+                    {inv.service ?? inv.service_name ?? "General treatment"}
+                  </td>
                   <td className="py-3 px-4 font-mono text-[#716a5d]">{inv.invoice_date}</td>
                   <td className="py-3 px-4 font-mono font-bold text-[#18221e]">
-                    {money(inv.amount - inv.discount)}
+                    {money(inv.total)}
                   </td>
                   <td className="py-3 px-4">
                     <StatusBadge text={inv.status} />
@@ -85,10 +87,12 @@ export function BillingTab({
                         onClick={async () => {
                           await api.updateInvoice(inv.id, {
                             patient_id: inv.patient_id,
-                            service: inv.service,
+                            service_id: inv.service_id,
                             invoice_date: inv.invoice_date,
-                            amount: inv.amount,
+                            subtotal: inv.subtotal,
+                            total: inv.total,
                             discount: inv.discount,
+                            tax: inv.tax,
                             status: "Paid",
                           });
                           await onReload();

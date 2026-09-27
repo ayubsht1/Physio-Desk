@@ -160,14 +160,14 @@ export type Invoice = {
   patient_id: number;
   appointment_id?: number | null;
   service_id?: number | null;
-  service: string;
+  service?: string | null;
+  service_name?: string | null;
   invoice_date: string;
-  amount: number;
-  subtotal?: number;
-  tax?: number;
-  total?: number;
-  status: "Paid" | "Due" | "Void";
-  payment_method?: string | null;
+  amount?: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: "Paid" | "Due" | "Void" | "Pending";
   discount: number;
   notes?: string | null;
   patient_name?: string | null;
@@ -207,7 +207,21 @@ export type PatientPayload = {
 
 export type TherapistPayload = Omit<Therapist, "id" | "image">;
 export type AppointmentPayload = Omit<Appointment, "id" | "patient_name" | "therapist_name">;
-export type InvoicePayload = Omit<Invoice, "id" | "patient_name">;
+export type InvoicePayload = {
+  patient_id: number;
+  appointment_id?: number | null;
+  service_id?: number | null;
+  invoice_date: string;
+  subtotal?: number;
+  amount?: number;
+  discount?: number;
+  tax?: number;
+  total?: number;
+  status: "Paid" | "Due" | "Void" | "Pending";
+  notes?: string | null;
+  service?: string;
+  payment_method?: string | null;
+};
 
 type Tokens = { access_token: string; refresh_token: string; token_type: string };
 
