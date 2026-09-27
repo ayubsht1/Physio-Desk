@@ -3,6 +3,7 @@ FROM node:20-alpine AS dependencies
 WORKDIR /app
 
 COPY package*.json ./
+
 RUN npm ci
 
 
@@ -10,7 +11,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+ARG BACKEND_API_URL
+ENV BACKEND_API_URL=$BACKEND_API_URL
+
 COPY --from=dependencies /app/node_modules ./node_modules
+
 COPY . .
 
 RUN npm run build
@@ -23,7 +28,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=builder /app/.next/standalone ./
+
 COPY --from=builder /app/.next/static ./.next/static
+
 COPY --from=builder /app/public ./public
 
 EXPOSE 3000
