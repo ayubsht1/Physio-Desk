@@ -19,11 +19,10 @@ const DEFAULT_SERVICES: ClinicService[] = [
     service_id: "sports-rehab",
     name: "Sports Injury & ACL Rehabilitation",
     category: "Sports Rehab",
-    duration: "45-60 min",
+    duration: 45,
     price: 1800,
-    price_display: "Rs. 1,800",
-    description: "Targeted protocol for acute joint sprains, torn ligaments, kinetic chain re-education, and return-to-play testing.",
-    indications: "ACL sprain, Meniscus tear, Ankle syndesmosis",
+    description:
+      "Targeted protocol for acute joint sprains, torn ligaments, kinetic chain re-education, and return-to-play testing.",
     is_active: true,
   },
   {
@@ -31,11 +30,10 @@ const DEFAULT_SERVICES: ClinicService[] = [
     service_id: "spine-posture",
     name: "Spine, Posture & Cervical Decompression",
     category: "Spine & Joint",
-    duration: "30-45 min",
+    duration: 30,
     price: 1500,
-    price_display: "Rs. 1,500",
-    description: "Relief for disc herniations, ergonomic thoracic stiffness, and cervical radiculopathy.",
-    indications: "L4-L5 protrusion, Cervical radiculopathy",
+    description:
+      "Relief for disc herniations, ergonomic thoracic stiffness, and cervical radiculopathy.",
     is_active: true,
   },
   {
@@ -43,11 +41,10 @@ const DEFAULT_SERVICES: ClinicService[] = [
     service_id: "neuro-rehab",
     name: "Neurological & Stroke Rehabilitation",
     category: "Neurological",
-    duration: "45 min",
+    duration: 45,
     price: 2000,
-    price_display: "Rs. 2,000",
-    description: "Gait retraining, proprioception re-education, vestibular and stroke mobility recovery.",
-    indications: "Stroke hemiparesis, Vestibular BPPV",
+    description:
+      "Gait retraining, proprioception re-education, vestibular and stroke mobility recovery.",
     is_active: true,
   },
   {
@@ -55,11 +52,10 @@ const DEFAULT_SERVICES: ClinicService[] = [
     service_id: "joint-manual",
     name: "Manual Therapy & Joint Mobilization",
     category: "Manual Therapy",
-    duration: "60 min",
+    duration: 60,
     price: 2200,
-    price_display: "Rs. 2,200",
-    description: "Hands-on joint mobilization, deep tissue myofascial release, and kinetic adjustment.",
-    indications: "Frozen shoulder, Adhesive capsulitis",
+    description:
+      "Hands-on joint mobilization, deep tissue myofascial release, and kinetic adjustment.",
     is_active: true,
   },
   {
@@ -67,14 +63,15 @@ const DEFAULT_SERVICES: ClinicService[] = [
     service_id: "general-eval",
     name: "Comprehensive Initial Physical Assessment",
     category: "Evaluation",
-    duration: "45 min",
+    duration: 45,
     price: 1200,
-    price_display: "Rs. 1,200",
-    description: "Full functional movement screen, biomechanical review, and customized care blueprint.",
-    indications: "New patients, Baseline assessment",
+    description:
+      "Full functional movement screen, biomechanical review, and customized care blueprint.",
     is_active: true,
   },
 ];
+
+const formatNPR = (n: number) => `NPR ${n.toLocaleString("en-IN")}`;
 
 export function BookingSection() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -84,8 +81,12 @@ export function BookingSection() {
   const [loading, setLoading] = useState(true);
 
   // Form State
-  const [selectedService, setSelectedService] = useState<ClinicService>(DEFAULT_SERVICES[0]);
-  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
+  const [selectedService, setSelectedService] = useState<ClinicService>(
+    DEFAULT_SERVICES[0],
+  );
+  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(
+    null,
+  );
 
   // Default to today or tomorrow
   const getTomorrowStr = () => {
@@ -120,40 +121,50 @@ export function BookingSection() {
     time: string;
     service: string;
     phone: string;
-    fee: string;
+    price: number;
   } | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      try {
-        const [serviceData, therapistData, apptData] = await Promise.all([
-          api.services().catch(() => DEFAULT_SERVICES),
-          api.therapists(),
-          api.appointments(),
-        ]);
+      const [servicesRes, therapistsRes, apptsRes] = await Promise.allSettled([
+        api.services(),
+        api.therapists(),
+        api.appointments(),
+      ]);
 
-        if (serviceData && serviceData.length > 0) {
-          setServices(serviceData);
-          setSelectedService(serviceData[0]);
+      if (servicesRes.status === "fulfilled") {
+        const list = servicesRes.value
+          .filter((s) => s.is_active)
+          .map((s) => ({ ...s, price: Number(s.price) || 0 }));
+        if (list.length > 0) {
+          setServices(list);
+          setSelectedService(list[0]);
         }
-
-        const activeList = therapistData.filter((t) => t.is_active);
-        setTherapists(activeList);
-        if (activeList.length > 0 && selectedTherapistId === null) {
-          setSelectedTherapistId(activeList[0].id);
-        }
-        setAppointments(apptData);
-      } catch (err) {
-        console.error("Failed to load booking data", err);
-      } finally {
-        setLoading(false);
+      } else {
+        console.error("services failed", servicesRes.reason);
       }
+
+      if (therapistsRes.status === "fulfilled") {
+        const active = therapistsRes.value.filter((t) => t.is_active);
+        setTherapists(active);
+        setSelectedTherapistId((prev) => prev ?? active[0]?.id ?? null);
+      }
+
+      if (apptsRes.status === "fulfilled") {
+        setAppointments(apptsRes.value);
+      }
+
+      setLoading(false);
     }
     loadData();
-  }, [selectedTherapistId]);
+  }, []);
 
   const selectedTherapist = useMemo(() => {
-    return therapists.find((t) => t.id === selectedTherapistId) ?? therapists[0] ?? null;
+    return (
+      therapists.find((t) => t.id === selectedTherapistId) ??
+      therapists[0] ??
+      null
+    );
   }, [therapists, selectedTherapistId]);
 
   // Compute available slots
@@ -172,11 +183,13 @@ export function BookingSection() {
       return [];
     }
 
-    const [startH, startM] = selectedTherapist.start_time.split(":").map(Number);
+    const [startH, startM] = selectedTherapist.start_time
+      .split(":")
+      .map(Number);
     const [endH, endM] = selectedTherapist.end_time.split(":").map(Number);
     const slotDuration = selectedTherapist.slot_duration || 30;
 
-    const totalMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+    const totalMinutes = endH * 60 + endM - (startH * 60 + startM);
     const totalSlots = Math.floor(totalMinutes / slotDuration);
 
     const generated: string[] = [];
@@ -192,7 +205,7 @@ export function BookingSection() {
           a.therapist_id === selectedTherapist.id &&
           a.appointment_date === selectedDate &&
           a.start_time === timeStr &&
-          a.status !== "Cancelled"
+          a.status !== "Cancelled",
       );
 
       if (!isBooked) {
@@ -208,11 +221,20 @@ export function BookingSection() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTherapist || !selectedSlot) {
-      setSubmitError("Please pick a specialist, date, and valid consultation slot.");
+      setSubmitError(
+        "Please pick a specialist, date, and valid consultation slot.",
+      );
       return;
     }
-    if (!firstName.trim() || !lastName.trim() || !phone.trim() || phone.trim() === "+977") {
-      setSubmitError("Please provide patient name and a valid Nepal mobile number (+977 98XXXXXXXX).");
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !phone.trim() ||
+      phone.trim() === "+977"
+    ) {
+      setSubmitError(
+        "Please provide patient name and a valid Nepal mobile number (+977 98XXXXXXXX).",
+      );
       return;
     }
 
@@ -221,40 +243,24 @@ export function BookingSection() {
 
     try {
       const cleanPhone = phone.trim();
-      const existing = await api.patients({ search: cleanPhone });
-      let patientId: number;
 
-      const digitsOnly = cleanPhone.replace(/\D/g, "");
-      const matchedPatient = existing.find(
-        (p) => p.phone.replace(/\D/g, "").slice(-9) === digitsOnly.slice(-9)
-      );
-
-      if (matchedPatient) {
-        patientId = matchedPatient.id;
-        await api.updatePatient(patientId, {
-          assigned_therapist_id: selectedTherapist.id,
-          medical_notes: medicalNotes ? medicalNotes : matchedPatient.medical_notes,
-          allergies: allergies ? allergies : matchedPatient.allergies,
-          address: address.trim() || matchedPatient.address,
-        });
-      } else {
-        const newPatient = await api.createPatient({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          phone: cleanPhone,
-          email: email.trim() || null,
-          date_of_birth: dateOfBirth || null,
-          gender: gender,
-          address: address.trim() || "Kathmandu Valley, Nepal",
-          blood_group: bloodGroup || null,
-          allergies: allergies || null,
-          medical_notes: medicalNotes || selectedService.name,
-          assigned_therapist_id: selectedTherapist.id,
-          status: "Active",
-          condition: selectedService.name,
-        });
-        patientId = newPatient.id;
-      }
+      // ALWAYS create a fresh patient record for every booking to preserve past visit data
+      const newPatient = await api.createPatient({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone: cleanPhone,
+        email: email.trim() || null,
+        date_of_birth: dateOfBirth || null,
+        gender: gender,
+        address: address.trim() || "Kathmandu Valley, Nepal",
+        blood_group: bloodGroup || null,
+        allergies: allergies || null,
+        medical_notes: medicalNotes || selectedService.name,
+        assigned_therapist_id: selectedTherapist.id,
+        status: "Active",
+        condition: selectedService.name,
+      });
+      const patientId = newPatient.id;
 
       // End time calculation
       const [sh, sm] = selectedSlot.split(":").map(Number);
@@ -271,7 +277,7 @@ export function BookingSection() {
         start_time: selectedSlot,
         end_time: endTimeStr,
         service: selectedService.name,
-        notes: `Program: ${selectedService.name} (${selectedService.price_display}). Patient note: ${medicalNotes || "None"}`,
+        notes: `Program: ${selectedService.name} (${selectedService.price}). Patient note: ${medicalNotes || "None"}`,
         payment_method: paymentMethod,
         status: "Booked",
       });
@@ -284,7 +290,7 @@ export function BookingSection() {
         time: selectedSlot,
         service: selectedService.name,
         phone: cleanPhone,
-        fee: selectedService.price_display,
+        price: selectedService.price,
       });
 
       const refreshedAppts = await api.appointments();
@@ -292,7 +298,11 @@ export function BookingSection() {
 
       setStep(4);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to confirm appointment. Please try again.");
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Failed to confirm appointment. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -312,7 +322,10 @@ export function BookingSection() {
   };
 
   return (
-    <section id="book" className="py-16 md:py-24 bg-[#f4ede1] border-b border-[#e5decb]">
+    <section
+      id="book"
+      className="py-16 md:py-24 bg-[#f4ede1] border-b border-[#e5decb]"
+    >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
@@ -324,8 +337,8 @@ export function BookingSection() {
             Schedule Your Clinical Consultation
           </h2>
           <p className="mt-2 text-sm sm:text-base text-[#675f50]">
-            Select your clinical rehabilitation program, choose an accredited physiotherapist, and reserve
-            your appointment in three simple steps.
+            Select your clinical rehabilitation program, choose an accredited
+            physiotherapist, and reserve your appointment in three simple steps.
           </p>
         </div>
 
@@ -343,7 +356,9 @@ export function BookingSection() {
                 >
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                      step === 1 ? "bg-[#b8763a] text-white" : "bg-[#ede4d4] text-[#554d40]"
+                      step === 1
+                        ? "bg-[#b8763a] text-white"
+                        : "bg-[#ede4d4] text-[#554d40]"
                     }`}
                   >
                     1
@@ -360,7 +375,9 @@ export function BookingSection() {
                 >
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                      step === 2 ? "bg-[#b8763a] text-white" : "bg-[#ede4d4] text-[#554d40]"
+                      step === 2
+                        ? "bg-[#b8763a] text-white"
+                        : "bg-[#ede4d4] text-[#554d40]"
                     }`}
                   >
                     2
@@ -379,7 +396,9 @@ export function BookingSection() {
                 >
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                      step === 3 ? "bg-[#b8763a] text-white" : "bg-[#ede4d4] text-[#554d40]"
+                      step === 3
+                        ? "bg-[#b8763a] text-white"
+                        : "bg-[#ede4d4] text-[#554d40]"
                     }`}
                   >
                     3
@@ -411,7 +430,8 @@ export function BookingSection() {
                       Choose Clinical Treatment Program
                     </h3>
                     <p className="text-xs sm:text-sm text-[#716a5d] mt-1">
-                      All rates are shown in Nepalese Rupees (NPR). Managed by NHPC licensed therapists.
+                      All rates are shown in Nepalese Rupees (NPR). Managed by
+                      NHPC licensed therapists.
                     </p>
                   </div>
 
@@ -433,7 +453,7 @@ export function BookingSection() {
                               {srv.name}
                             </span>
                             <span className="text-xs font-mono font-bold text-[#b8763a] bg-[#f0dfc7] px-2 py-0.5 rounded shrink-0">
-                              {srv.price_display}
+                              {formatNPR(srv.price)}
                             </span>
                           </div>
                           <p className="text-xs text-[#6e675a] mt-2 leading-relaxed">
@@ -446,7 +466,8 @@ export function BookingSection() {
                             </span>
                             {isSelected && (
                               <span className="text-[#b8763a] font-medium flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Selected
+                                <CheckCircle2 className="w-3.5 h-3.5" />{" "}
+                                Selected
                               </span>
                             )}
                           </div>
@@ -483,7 +504,8 @@ export function BookingSection() {
                       Select Licensed Specialist & Time Slot
                     </h3>
                     <p className="text-xs sm:text-sm text-[#716a5d] mt-1">
-                      Choose your physical therapy provider and a convenient date at our Jhamsikhel clinic.
+                      Choose your physical therapy provider and a convenient
+                      date at our Jhamsikhel clinic.
                     </p>
                   </div>
 
@@ -545,7 +567,9 @@ export function BookingSection() {
                             </div>
                             <div className="mt-2.5 pt-2 border-t border-[#f0e7d7] text-[10px] text-[#857d6f] flex justify-between items-center">
                               <span>{t.working_days}</span>
-                              <span className="font-mono">{t.slot_duration}m</span>
+                              <span className="font-mono">
+                                {t.slot_duration}m
+                              </span>
                             </div>
                           </div>
                         );
@@ -592,8 +616,8 @@ export function BookingSection() {
                         <div className="p-8 text-center text-xs text-[#716a5d] bg-[#fbf9f4] rounded-xl border border-[#ede5d5] flex flex-col items-center gap-2">
                           <AlertCircle className="w-5 h-5 text-[#b8763a]" />
                           <span>
-                            No open slots for {selectedTherapist?.name} on this date.
-                            Please select another day or doctor.
+                            No open slots for {selectedTherapist?.name} on this
+                            date. Please select another day or doctor.
                           </span>
                         </div>
                       ) : (
@@ -658,8 +682,9 @@ export function BookingSection() {
                       Patient Clinical Intake (Nepal)
                     </h3>
                     <p className="text-xs sm:text-sm text-[#716a5d] mt-1">
-                      Enter your mobile number and medical details. Your mobile number acts as your lookup key
-                      to inspect or modify your bookings.
+                      Enter your mobile number and medical details. Your mobile
+                      number acts as your lookup key to inspect or modify your
+                      bookings.
                     </p>
                   </div>
 
@@ -695,7 +720,8 @@ export function BookingSection() {
 
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-[#554d40]">
-                          Mobile Phone (Nepal +977) <span className="text-[#b5493b]">*</span>
+                          Mobile Phone (Nepal +977){" "}
+                          <span className="text-[#b5493b]">*</span>
                         </label>
                         <input
                           type="tel"
@@ -746,7 +772,9 @@ export function BookingSection() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-[#554d40]">Gender</label>
+                        <label className="text-xs font-semibold text-[#554d40]">
+                          Gender
+                        </label>
                         <select
                           value={gender}
                           onChange={(e) => setGender(e.target.value)}
@@ -820,13 +848,19 @@ export function BookingSection() {
                       <div className="p-3 bg-[#faf5ec] border border-[#e4d8c2] rounded-xl text-xs space-y-1 text-[#665e50]">
                         <div className="flex justify-between font-semibold text-[#18221e]">
                           <span>{selectedService.name}</span>
-                          <span className="font-mono text-[#b8763a]">{selectedService.price_display}</span>
+                          <span className="font-mono text-[#b8763a]">{formatNPR(selectedService.price)}</span>
                         </div>
                         <div>
-                          Doctor: <span className="font-medium text-[#18221e]">{selectedTherapist?.name}</span>
+                          Doctor:{" "}
+                          <span className="font-medium text-[#18221e]">
+                            {selectedTherapist?.name}
+                          </span>
                         </div>
                         <div>
-                          Slot: <span className="font-mono font-medium">{selectedDate} @ {selectedSlot}</span>
+                          Slot:{" "}
+                          <span className="font-mono font-medium">
+                            {selectedDate} @ {selectedSlot}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -878,7 +912,8 @@ export function BookingSection() {
                       Appointment Reserved!
                     </h3>
                     <p className="text-sm text-[#716a5d] mt-1">
-                      Your consultation session is confirmed at our Jhamsikhel, Lalitpur clinic.
+                      Your consultation session is confirmed at our Jhamsikhel,
+                      Lalitpur clinic.
                     </p>
                   </div>
 
@@ -898,7 +933,9 @@ export function BookingSection() {
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[#716a5d]">Consulting Specialist</span>
+                      <span className="text-[#716a5d]">
+                        Consulting Specialist
+                      </span>
                       <span className="font-semibold text-[#18221e]">
                         {confirmedBooking.therapistName}
                       </span>
@@ -914,7 +951,7 @@ export function BookingSection() {
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#716a5d]">Treatment & Fee</span>
                       <span className="font-medium text-[#18221e]">
-                        {confirmedBooking.service} ({confirmedBooking.fee})
+                        {confirmedBooking.service} ({formatNPR(confirmedBooking.price)})
                       </span>
                     </div>
 

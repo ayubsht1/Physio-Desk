@@ -92,18 +92,17 @@ function servicePayloadForBackend(payload: ServicePayload | Partial<ServicePaylo
   };
 }
 
-export type ClinicService = {
+export interface ClinicService {
   id: number;
-  service_id: string;
+  service_id?: string | null;
   name: string;
   category: string;
-  duration: string;
-  price: number;
-  price_display: string;
-  description: string;
-  indications?: string;
+  description?: string | null;
+  duration: number; // e.g. 45
+  price: number;    // e.g. 1500
   is_active: boolean;
-};
+  created_at?: string;
+}
 
 export type ServicePayload = {
   service_id?: string;
