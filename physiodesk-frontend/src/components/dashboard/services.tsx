@@ -290,14 +290,13 @@ function ServiceFormModal({
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState(initial?.category ?? "Sports Rehab");
   const [duration, setDuration] = useState(initial?.duration ?? "45 min");
-  const [price, setPrice] = useState(initial?.price ? String(initial.price) : "1500");
-  const [indications, setIndications] = useState(initial?.indications ?? "");
+  const [price, setPrice] = useState<string>(initial?.price ? String(initial.price) : "1500");  const [indications, setIndications] = useState(initial?.indications ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
+const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError("");
@@ -305,8 +304,8 @@ function ServiceFormModal({
       await onSave({
         name: name.trim(),
         category: category.trim(),
-        duration: duration.trim(),
-        price: Number(price),
+        duration: String(duration).trim(), // Fixed here
+        price: Number(String(price).trim()),
         indications: indications.trim(),
         description: description.trim(),
         is_active: isActive,

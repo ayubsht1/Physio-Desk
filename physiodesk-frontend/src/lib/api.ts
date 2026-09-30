@@ -100,6 +100,8 @@ export interface ClinicService {
   description?: string | null;
   duration: number; // e.g. 45
   price: number;    // e.g. 1500
+  price_display?: string;
+  indications?: string | null;
   is_active: boolean;
   created_at?: string;
 }
@@ -108,7 +110,7 @@ export type ServicePayload = {
   service_id?: string;
   name: string;
   category: string;
-  duration: string;
+  duration: string | number;
   price: number;
   description: string;
   indications?: string;
