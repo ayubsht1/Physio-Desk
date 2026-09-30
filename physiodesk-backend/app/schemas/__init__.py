@@ -190,6 +190,8 @@ class ServiceCreate(BaseModel):
     description: str | None = None
     duration: int = Field(..., gt=0)
     price: float = Field(..., ge=0)
+    category: str | None = "General Physiotherapy"
+    indications: str | None = None
     is_active: bool = True
 
 class ServiceUpdate(BaseModel):
@@ -197,6 +199,8 @@ class ServiceUpdate(BaseModel):
     description: str | None = None
     duration: int | None = Field(None, gt=0)
     price: float | None = Field(None, ge=0)
+    category: str | None = None
+    indications: str | None = None
     is_active: bool | None = None
 
 class ServiceRead(BaseModel):
@@ -207,8 +211,11 @@ class ServiceRead(BaseModel):
     description: str | None = None
     duration: int
     price: float
+    indications: str | None = None
     is_active: bool
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 class TherapistCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)

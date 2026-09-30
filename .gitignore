@@ -14,3 +14,6 @@ physiodesk-backend/venv/
 !.env.example
 
 .vscode/launch.json
+
+*.db
+*.sqlite3

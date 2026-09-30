@@ -32,15 +32,17 @@ services:
       - "8000:8000"
 
   frontend:
-    build:
-      context: ./physiodesk-frontend
-    environment:
-      BACKEND_API_URL: http://backend:8000/api/v1
-    depends_on:
-      backend:
-        condition: service_started
-    ports:
-      - "3000:3000"
+      build:
+        context: ./physiodesk-frontend
+        args:
+          BACKEND_API_URL: ${BACKEND_API_URL}
+      environment:
+        BACKEND_API_URL: http://backend:8000/api/v1
+      depends_on:
+        backend:
+          condition: service_started
+      ports:
+        - "3000:3000"
 
 volumes:
   physio-desk-data:
